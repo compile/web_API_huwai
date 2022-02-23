@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+<form class="layui-form layui-form-pane" lay-filter="formser">
+    <div class="layui-form-item">
+        <label class="layui-form-label">TXT</label>
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn" id="uploadThumb">
+                <i class="layui-icon">&#xe67c;</i>上传文档txt格式
+            </button>
+        </div>
+
+
+        <div id="path">
+
+        </div>
+        <div id="result_fail">
+
+        </div>
+        <div id="result_ok">
+
+        </div>
+    </div>
+</form>
+</body>
+<script>
+    $(function () {
+        layui.use(['form', 'layer', 'upload', 'laydate', 'layedit'], function () {
+            var form = layui.form, layer = layui.layer, $ = layui.jquery, laydate = layui.laydate,
+                upload = layui.upload;
+            $ = layui.$;
+            //执行实例
+            var uploadInst = upload.render({
+                elem: '#uploadThumb' //绑定元素
+                , url: "{:url('uploadtxt')}" //上传接口
+                , accept: 'file'
+                , field: 'txt'
+                , before: function (obj) {
+                    console.log('test');
+                    index = layer.load(1);
+                    layer.msg('上传处理中,请等待结束会出现下载链接', {
+                        time: 6000, //6s后自动关闭
+                        icon: 1
+                    });
+                }
+                , done: function (res) {
+                    console.log(res.failinfo);
+                    console.log(res.okinfo);
+                    layui.use('layer', function () {
+                        var layer = layui.layer;
+                        var failinfo = '<table style="border:1px;solid:#ca2aca;width:100%;">';
+                        var okinfo = '<table style="border:1px;solid:#ca2aca;width:100%;">';
+                        $.each(res.failinfo, function(index,item) {
+                             console.log(item.cai);
+                            failinfo += '<br><tr><dd>'+item.cai+'</dd><dd>'+item.pan+'</dd><dd>'+item.result+'</dd><br>';
+                        });
+
+                        $.each(res.okinfo, function(index,item) {
+                            console.log('tttt');
+                            okinfo += '<br><dd>'+item.cai+'</dd><dd>'+item.pan+'</dd><dd>'+item.result+'</dd><br>';
+                        });
+
+                        $("#result_fail").html(failinfo);
+                        $("#result_ok").html(okinfo);
+                        $("#path").html("<div style='text-align:center;'><a href='http://" + res.url + "' download='http://" + res.url + "'>点击下载</a></div>");
+                        // $("#result_fail").html("<div style='text-align:center;'><a href='http://" + res.url + "' download='http://" + res.url + "'>点击下载</a></div>");
+                        // $("#result_ok").html("<div style='text-align:center;'><a href='http://" + res.url + "' download='http://" + res.url + "'>点击下载</a></div>");
+                        layer.close(index);
+
+                        layer.msg(res.url, {
+                            time: 6000, //6s后自动关闭
+                            icon: 1
+                        });
+                    });
+                }
+                , error: function () {
+                    //请求异常回调
+                    layer.close(index);
+                }
+            });
+        });
+    });
+</script>
+<style>
+
+        #result_fail{
+            background:#000;color:#f0ead8;padding:10px;width: 42%;
+            float: left;
+            height: 100%;
+            min-height: 1000px !important;
+        }
+    #result_ok{
+        background:#f0ead8;color:#000;padding:10px;
+        width: 42%;
+        float: left;
+        height: 100%;
+        min-height: 1000px !important;
+    }
+    </style>
+

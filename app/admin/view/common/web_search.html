@@ -1,0 +1,59 @@
+<div class="demoTable layui-form">
+    <table class="layui-table" lay-skin="line">
+        <colgroup>
+            <col width="190">
+            <col width="250">
+            <col width="100">
+            <col width="250">
+            <col width="250">
+            <col width="250">
+            <col width="250">
+            <col width="250">
+            <col width="250">
+            <col width="170">
+            <col width="250">
+            <col width="20">
+            <col width="250">
+        </colgroup>
+        <tbody>
+        <tr>
+            <td>类型:</td>
+            <td><input type="text" name="typename" placeholder="" class="layui-input"></td>
+            <td>服务器ip:</td>
+            <td><input type="text" name="ip" placeholder="" class="layui-input"></td>
+            <td>
+                <div class="layui-input-inline">
+                    <select name="province" lay-filter="province" id="s_p">
+                        <option value="0">请选择类型</option>
+                    </select>
+                </div>
+            </td>
+            <td>创建时间</td>
+            <td>
+                <div class="layui-input-inline tt">
+                    <input class="layui-input mydate" name="start_time" placeholder="选择开始时间" id="start_time">
+                </div>
+            </td>
+            <td>到</td>
+            <td>
+                <div class="layui-input-inline tt">
+                    <input class="layui-input mydate" name="end_time" placeholder="选择结束时间" id="end_time">
+                </div>
+            </td>
+
+            <td>状态</td>
+            <td>
+                <select name="status">
+                    <option value="">请选择</option>
+                    <option value="1">正常</option>
+                    <option value="2">异常</option>
+                </select>
+            </td>
+            <td>
+                <button class="layui-btn layuiadmin-btn-list" lay-submit lay-filter="search" id="search">搜索</button>
+            </td>
+
+        </tr>
+        </tbody>
+    </table>
+</div>

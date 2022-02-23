@@ -1,0 +1,1092 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>添加商品 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static/admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static/admin/css/style-iframe.css">
+<!--    <script src="/guanli/static/common/layui/layui.js"></script>-->
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+    <script src="/admin/static/common/WdatePicker.js"></script>
+
+
+
+    <!-- 图片上传界面需要的 start -->
+    <script type="text/javascript" src="/admin/static/common/H-ui.min.js"></script>
+    <script type="text/javascript" src="/admin/static/common/H-ui.admin.js"></script>
+    <script type="text/javascript" src="/admin/static/common/H-ui.js"></script>
+
+    <link href="./H-ui.min.css" rel="stylesheet" type="text/css" />
+    <link href="./style.css" rel="stylesheet" type="text/css" />
+    <script>
+        var _upload_url = "index.php?module=system&action=UploadImg";
+    </script>
+    <script>
+        var group_url = "/Admin/Goods/list_group";
+    </script>
+    <script>
+        var _upload_file_list_url = "/Admin/Goods/fupload";
+    </script>
+    <script src="/admin/static/common/jquery.nicescroll.min.js"></script>
+    <script src="/admin/static/common/common.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+    <script src="/admin/static/common/tether.min.js"></script>
+    <script src="/admin/static/common/bootstrap.min.js"></script>
+    <script src="/admin/static/common/plupload.full.min.js"></script>
+    <script src="/admin/static/common/jquery.datetimepicker.full.min.js"></script>
+    <script src="/admin/static/common/common.v2.js?c=adfsadfadsfm"></script>
+    <script src="/admin/static/common/clipboard.js"></script>
+    <script type="text/javascript" src="/admin/static/common/layer.js"></script>
+    <script src="/admin/static/common/laydate.js"></script>
+    <script src="/admin/static/common/Modify.js?c=sadfasfmdd"></script>
+    <link rel="stylesheet" href="/admin/static/admin/css/Modify.css?c=m" />
+
+    <!-- 图片上传界面需要的 end -->
+</head>
+<body>
+
+<script>
+    /** 图片上传界面需要的 start **/
+    //添加分组
+    $(document).on("click", ".add-group", function () {
+        var group = {
+            name: "未命名",
+            is_default: 0,
+        };
+        saveGroup(group);
+    });
+
+    $(document).on("click", ".picker-district", function () {
+        $.districtPicker({
+            success: function (res) {
+                $("#province_id").val(res.province_id);
+                $("#city_id").val(res.city_id);
+                $("#district_id").val(res.district_id);
+                $(".district-text").val(
+                    res.province_name + "-" + res.city_name + "-" + res.district_name
+                );
+            },
+            error: function (e) {
+                console.log(e);
+            },
+        });
+    });
+
+    //保存单个分组信息
+    function saveGroup(group) {
+        $.ajax({
+            url: group_img,
+            dataType: "json",
+            type: "post",
+            data: {
+                m: "save_group",
+                data: JSON.stringify(group),
+            },
+            success: function (res) {
+                if (res.code == 0) {
+                    file_app.group_list = res.data;
+                } else {
+                    // $.myAlert({
+                    //     content:res.smg
+                    // });
+                    layer.msg(res.msg, {
+                        time: 2000,
+                    });
+                }
+            },
+        });
+    }
+
+    //选择分组
+    $(document).on("click", ".selected-group", function (event) {
+        var text_name = $(this).find(".upload_more").text();
+
+        $(this)
+            .children(".upload_list")
+            .find(".upload_more")
+            .addClass("upload_mask");
+        $(this)
+            .siblings(".selected-group")
+            .find(".upload_more")
+            .removeClass("upload_mask");
+
+        if (text_name == "全部") {
+            $(this)
+                .siblings(".selected-group")
+                .find(".upload_setting")
+                .css("display", "none");
+        } else {
+            $(this)
+                .children(".upload_list")
+                .find(".upload_setting")
+                .css("display", "block");
+            $(this)
+                .siblings(".selected-group")
+                .find(".upload_setting")
+                .css("display", "none");
+        }
+
+        file_app.selected = $(this).data("index");
+        $("input[name='checkbox']").prop("checked", false);
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        getGroupFile();
+    });
+
+    //打开设置
+    $(document).on("click", ".setting-group", function (event) {
+        var index = $(this).data("index");
+        file_app.edit_group = -1;
+        file_app.selected = index;
+        if (file_app.edit_setting == index) {
+            file_app.edit_setting = -1;
+        } else {
+            file_app.edit_setting = index;
+        }
+        //getGroupFile();
+        event.stopPropagation();
+    });
+
+    //编辑分组
+    $(document).on("click", ".edit-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        var index = $(this).data("index");
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        file_app.edit_group = index;
+    });
+
+    //删除分组
+    $(document).on("click", ".delete-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        var index = $(this).data("index");
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        file_app.selected = 0;
+        var group = file_app.group_list[index];
+        if (group.id) {
+            group.is_delete = "1";
+        } else {
+            file_app.group_list.splice(index, 1);
+        }
+        saveGroup(group);
+    });
+
+    //确定修改
+    $(document).on("click", ".save-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        var group = file_app.group_list[file_app.edit_group];
+        group.name = $(".name-group").val();
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        saveGroup(group);
+    });
+
+    //取消修改
+    $(document).on("click", ".cancel-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+    });
+
+    //阻止冒泡事件
+    $(document).on("click", ".name-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+    });
+
+    //保存
+    $(document).on("click", ".save-group-list", function () {
+        if (file_app.file_list.length > 0) {
+            var item = file_app.file_list[0];
+
+            if (typeof _file_select.success === "function") {
+                _file_select.success({
+                    name: item.file_url,
+                    url: item.file_url,
+                });
+            }
+        }
+
+        file_app.file_list = [];
+        file_app.list = [];
+        file_app.selected = 0;
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        $("#file_select_modal").modal("hide");
+    });
+
+    //取消
+    $(document).on("click", ".cancel-group-list", function () {
+        file_app.file_list = [];
+        file_app.list = [];
+        file_app.selected = 0;
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        $("#file_select_modal").modal("hide");
+    });
+
+    //全选图片
+    $(document).on("change", "input[name='checkbox']", function () {
+        var list = file_app.list;
+        file_app.file_list = [];
+        $(list).each(function (i) {
+            if ($("input[name='checkbox']:checked").val() == 1) {
+                list[i].selected = 1;
+                var file = list[i];
+                file_app.file_list.push(file);
+            } else {
+                list[i].selected = 0;
+            }
+        });
+        addFile();
+    });
+
+    //选择图片
+    $(document).on("click", "#file_select_modal .file-item", function () {
+        var index = $(this).data("index");
+        file_app.file_list = [];
+        if (file_app.list[index].selected == 1) {
+            file_app.list[index].selected = 0;
+        } else {
+            file_app.list[index].selected = 1;
+        }
+        $("input[name='checkbox']").prop("checked", false);
+        addFile();
+    });
+
+    //选中的图片
+    function addFile() {
+        var list = file_app.list;
+        file_app.file_list = [];
+        $(list).each(function (i) {
+            if (list[i].selected == 1) {
+                var file = list[i];
+                file_app.file_list.push(file);
+            }
+        });
+    }
+
+    //删除选中的图片
+    $(document).on("click", ".delete-file-group", function () {
+        var file_list = file_app.file_list;
+        if (file_list.length == 0) {
+            // $.myAlert({
+            // 	content: '请先勾选需要删除的图片'
+            // });
+            layer.msg("请先勾选需要删除的图片", {
+                time: 2000,
+            });
+            return false;
+        }
+        $.ajax({
+            url: group_img,
+            dataType: "json",
+            type: "post",
+            data: {
+                m: "delete",
+                data: JSON.stringify(file_list),
+            },
+            success: function (res) {
+                if (res.code == 0) {
+                    var list = file_app.list;
+                    var new_list = [];
+                    $(list).each(function (i) {
+                        if (list[i].selected != 1) {
+                            new_list.push(list[i]);
+                        }
+                    });
+                    file_app.list = new_list;
+                    file_app.file_list = [];
+                    $("input[name='checkbox']").prop("checked", false);
+                    // $.myAlert({
+                    // 	content: '删除成功'
+                    // });
+                    layer.msg("删除成功", {
+                        time: 2000,
+                    });
+                } else {
+                    // $.myAlert({
+                    // 	content: res.msg
+                    // });
+                    layer.msg(res.msg, {
+                        time: 2000,
+                    });
+                }
+            },
+        });
+    });
+
+    //移动图片到某个分组
+    $(document).on("click", ".batch-group", function () {
+        var file_list = file_app.file_list;
+        var index = $(this).data("index");
+        if (file_list.length == 0) {
+            layer.msg("请先勾选需要删除的图片", {
+                time: 2000,
+            });
+            return false;
+        }
+        $.ajax({
+            url: group_img,
+            dataType: "json",
+            type: "post",
+            data: {
+                m: "move",
+                data: JSON.stringify(file_list),
+                group_id: file_app.group_list[index].id,
+            },
+            success: function (res) {
+                if (res.code == 0) {
+                    file_app.file_list = [];
+                    $("input[name='checkbox']").prop("checked", false);
+                    file_app.selected = index;
+                    getGroupFile();
+                    // $.myAlert({
+                    // 	content: '移动成功'
+                    // });
+                    layer.msg("移动成功", {
+                        time: 2000,
+                    });
+                } else {
+                    // $.myAlert({
+                    // 	content: res.msg
+                    // });
+                    layer.msg(res.msg, {
+                        time: 2000,
+                    });
+                }
+            },
+        });
+    });
+
+    //获得分组下的图片
+    function getGroupFile() {
+        var more_btn = $("#file_select_modal .file-more");
+        var loading_block = $("#file_select_modal .file-loading");
+        var group_id = file_app.group_list[file_app.selected].id;
+        if (group_id < 1) {
+            group_id = "";
+        }
+        // var group_id = 1;
+        console.log(group_id);
+        loading_block.show();
+        more_btn.hide();
+        $.ajax({
+            url: _upload_file_list_url,
+            data: {
+                dataType: "json",
+                type: "image",
+                page: 1,
+                group_id: group_id,
+            },
+            success: function (res) {
+                more_btn.attr("data-page", 2);
+                loading_block.hide();
+                more_btn.show();
+                file_app.list = res.data.list;
+            },
+        });
+    }
+
+    //上传图片
+    $(document).on("click", ".upload-group .upload-file-group", function () {
+        //分组ID
+        var group_id = file_app.group_list[file_app.selected].id;
+        if (group_id <= 0) {
+            group_id = 0;
+        }
+        var btn = $(this);
+        var group = btn.parents(".upload-group");
+        var input = group.find(".file-input");
+        var preview = group.find(".upload-preview");
+        var preview_img = group.find(".upload-preview-img");
+        $.upload_file({
+            url: _upload_url + "&group_id=" + group_id,
+            accept: group.attr("accept") || "image/*",
+            start: function () {
+                // btn.btnLoading(btn.text());
+            },
+            success: function (res) {
+                btn.btnReset();
+                if (res.code === 1) {
+                    $.alert({
+                        content: res.msg,
+                    });
+                    return;
+                }
+                getGroupFile();
+            },
+        });
+    });
+    String.prototype._trim = function (char, type) {
+        if (char) {
+            if (type == "left") {
+                return this.replace(new RegExp("^\\" + char + "+", "g"), "");
+            } else if (type == "right") {
+                return this.replace(new RegExp("\\" + char + "+$", "g"), "");
+            }
+            return this.replace(
+                new RegExp("^\\" + char + "+|\\" + char + "+$", "g"),
+                ""
+            );
+        }
+        return this.replace(/^\s+|\s+$/g, "");
+    };
+
+    var pick_link_modal;
+    $(document).ready(function () {
+        var pick_link_btn;
+
+        pick_link_modal = new Vue({
+            el: "#pick_link_modal",
+            data: {
+                in_array: function (val, arr) {
+                    return $.inArray(val, arr);
+                },
+                open_type: [],
+                selected_link: null,
+                link_list: null,
+                is_required: false,
+            },
+        });
+
+        $(document).on("change", ".link-list-select", function () {
+            var i = $(this).val();
+            var arr = pick_link_modal.link_list[i].params;
+            if (arr.length) {
+                if (arr[0].required == "required") {
+                    pick_link_modal.is_required = true;
+                } else {
+                    pick_link_modal.is_required = false;
+                }
+            }
+
+            if (i == "") {
+                pick_link_modal.selected_link = null;
+                return;
+            }
+            pick_link_modal.selected_link = pick_link_modal.link_list[i];
+        });
+
+        $(document).on("click", ".pick-link-btn", function () {
+            pick_link_btn = $(this);
+            var open_type = $(this).attr("open-type");
+            if (open_type && open_type != "") {
+                open_type = open_type.split(",");
+            } else {
+                open_type = ["navigate", "switchTab", "wxapp"];
+            }
+            pick_link_modal.open_type = open_type;
+            $.ajax({
+                url: show_pages,
+                method: "get",
+                dataType: "json",
+                success: function (res) {
+                    pick_link_modal.link_list = res;
+                    $(".pick-link-modal").modal("show");
+                },
+            });
+        });
+
+        $(document).on("click", ".pick-link-confirm", function () {
+            if ($(".paramVal").val() == "" && pick_link_modal.is_required) {
+                console.log($(".paramVal").val());
+                return;
+            }
+
+            var selected_link = pick_link_modal.selected_link;
+            if (!selected_link) {
+                $(".pick-link-modal").modal("hide");
+                return;
+            }
+            var link_input = pick_link_btn
+                .parents(".page-link-input")
+                .find(".link-input");
+            var open_type_input = pick_link_btn
+                .parents(".page-link-input")
+                .find(".link-open-type");
+            var params = "";
+            if (selected_link.params && selected_link.params.length > 0) {
+                for (var i in selected_link.params) {
+                    params +=
+                        selected_link.params[i].key +
+                        "=" +
+                        encodeURIComponent(selected_link.params[i].value) +
+                        "&";
+                }
+            }
+            var link = selected_link.Link;
+            link += "?" + params;
+            link = link._trim("&");
+            link = link._trim("?");
+            link_input.val(link).change();
+            open_type_input.val(selected_link.open_type).change();
+            $(".pick-link-modal").modal("hide");
+        });
+    });
+
+    /** 图片上传界面需要的 end **/
+</script>
+
+
+<!-- 图片上传界面需要的 start -->
+<div
+        class="upload_picture"
+        id="file_select_modal"
+        data-backdrop="static"
+        style="z-index: 99999999;"
+>
+    <div class="upload_flex" role="document">
+        <div class="upload_auto">
+            <div class="upload_title">
+                选择文件
+                <img src="./cha.png" class="cancel-group-list upload_cha" />
+            </div>
+            <div id="file" class="upload_content">
+                <div class="upload_view">
+                    <div class="upload_l">
+                        <div class="add-group upload_add">
+                            <img src="./tj.png" /> 添加分组
+                        </div>
+                    </div>
+                    <div class="upload_r file-list">
+                        <div class="upload_r_title">
+                            <div class="upload-group upload_group">
+                                <label class="checkbox-label"
+                                ><input type="checkbox" name="checkbox" value="1" />
+                                    <span class="label-icon"></span>
+                                    <span class="label-text">全选</span></label
+                                >
+                            </div>
+                            <div class="upload_dell">
+                                <a
+                                        href="javascript:"
+                                        class="btn-danger delete-file-group reset"
+                                ><img src="./shc.png" class="ul_img1" />
+                                    <img src="./sha_h.png" class="ul_img2" /> 删除</a
+                                >
+                            </div>
+                            <div class="dropdown upload_dropdown">
+                                <button
+                                        type="button"
+                                        id="dropdownMenuButton"
+                                        data-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        class="reset"
+                                >
+                                    移动
+                                </button>
+                                <div class="upload_dropdown_l">
+                                    <img src="./zf_h.png" class="ul_img1" />
+                                    <img src="./yd.png" class="ul_img2" />
+                                </div>
+                                <div class="upload_dropdown_r">
+                                    <img src="./jtx.png" class="ul_img1" />
+                                    <img src="./jiant.png" class="ul_img2" />
+                                </div>
+                                <div
+                                        aria-labelledby="dropdownMenuButton"
+                                        class="dropdown-menu upload_menu"
+                                ></div>
+                            </div>
+                            <div class="upload-group upload_images">
+                                <a href="javascript:" class="btn-primary upload-file-group"
+                                ><img src="./shangc.png" class="ul_img3" />
+                                    <img src="./shangc_h.png" class="ul_img4" /> 上传图片</a
+                                >
+                            </div>
+                        </div>
+                        <div class="upload_h"></div>
+                        <div class="file-loading text-center upload_loading">
+                            <img
+                                    src="./loading-2.svg"
+                                    style="height: 1.14286rem; width: 1.14286rem;"
+                            />
+                        </div>
+                        <div class="text-center upload_text">
+                            <a href="javascript:" class="file-more" style="display: none;"
+                            >加载更多</a
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="upload_footer">
+                    <div class="cancel-group-list ta_btn4">取消</div>
+                    <div class="save-group-list ta_btn3 buttom_hover">确定</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片上传界面需要的 end -->
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>添加商品</legend>
+            </fieldset>
+
+            <form class="layui-form " action="">
+                <div class="layui-form-item">
+                    <label class="layui-form-label"></label>
+
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">商品标题</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="title" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">商品附标题</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="attach_title" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">关键词</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="keyword" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">重量</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="keyword" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+
+
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">商品分类</label>
+                            <div id="cat_ids1">
+                            </div>
+                        </div>
+
+
+
+                        <div class="layui-form-item" style="text-align:center;">
+                            <div class="layui-input-block">
+<!--                                <button type="button" class="layui-btn" lay-submit="" lay-filter="demo">console.log</button>-->
+                        </div>
+
+
+ <form class="layui-form" action="" lay-filter="example">
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">商品品牌</label>
+                    <div class="layui-input-inline" style="width: 200px">
+                            <select name="goods_brand" lay-filter="goods_brand" id="goods_brand" lay-verify="required" >
+                                <option value="0">选择所在品牌</option>
+                            </select>
+
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="formListSD"><div class="formTextBigSD"><span class="must">*</span><span>商品展示图：</span></div> <div class="formInputSD upload-group multiple"><div class="upload-preview form_new_img">
+                        <img src="./sha.png" class="form_new_sha file-item-delete">
+                        <img src="./1604036181803.png" class="upload-preview-img">
+                        <div onclick="set_center(this)" class="form_new_words set_center">
+                            主图
+                        </div>
+                        <input type="hidden" name="imgurls[]" value="https://laikeds.oss-cn-shenzhen.aliyuncs.com/1/1/1604036181803.png" class="file-item-input">
+                    </div><div id="sortList" class="upload-preview-list uppre_auto"><div class="upload-preview form_new_img" style="display: none;"><img src="./sha.png" class="form_new_sha file-item-delete"> <img src="" class="upload-preview-img"> <div onclick="set_center(this)" class="form_new_words set_center">主图</div> <input type="hidden" name="imgurls[center]" value="" class="file-item-input"></div></div> <div data-max="5" class="select-file form_new_file from_i"><div><img data-max="5" src="./sahc.png" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="" class="btn-secondary select-file"> <span class="form_new_span">上传图片</span></div></div> <span class="addText" style="max-width: 350px;">（展示图最多上传五张，建议上传500px*500px的图片，主图未设置则默认第一张）</span></div></div>
+
+                </div>
+     <fieldset class="layui-elem-field layui-field-title">
+                    <legend>商品属性</legend>
+     </fieldset>
+
+
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">成本价</label>
+                    <div class="layui-input-inline">
+                        <input type="number" min="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" name="cbj" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">原价</label>
+                    <div class="layui-input-inline">
+                        <input type="number" min="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" name="yj" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">售价</label>
+                    <div class="layui-input-inline">
+                        <input type="number" min="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" name="sj" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">单位</label>
+                    <div class="layui-input-inline" style="width: 200px">
+                        <select name="goods_unit" lay-filter="goods_unit" id="goods_unit" lay-verify="required" >
+                            <option value="0">选择单位</option>
+                        </select>
+
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">库存</label>
+                    <div class="layui-input-inline">
+                        <input type="number" min="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" name="keyword" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+
+
+
+
+
+
+
+
+                            <div>
+                                <div class="arrt_block">
+                                    <div class="formTextSD">规则/属性：</div>
+
+                                </div>
+
+
+
+                                <div class="layui-row">
+
+                                    <div class="layui-col-lg12 layui-col-md12">
+                                        <fieldset class="layui-elem-field  ">
+
+
+
+                                                <div class="layui-block">
+                                                    <label class="layui-form-label">商品属性</label>
+                                                    <div class="layui-input-inline">
+                                                        <select name="goods_attr"  id="goods_attr"  multiple lay-search lay-tools  lay-filter='multi'>
+                                                            <option value="">选择商品属性</option>
+<!--                                                            <option>sing1</option>-->
+<!--                                                            <option selected>sing2</option>-->
+<!--                                                            <option>SING1-大写</option>-->
+<!--                                                            <option>movie1</option>-->
+<!--                                                            <option selected>movie2</option>-->
+<!--                                                            <option>movie3</option>-->
+<!--                                                            <option>MOVIE4</option>-->
+<!--                                                            <option>swim</option>-->
+<!--                                                            <option>moon</option>-->
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="layui-form-item">
+                                                    <div class="layui-input-block">
+                                                        <a class="layui-btn" lay-submit="" lay-filter="*">查看表单信息</a>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </fieldset>
+                                    </div>
+
+                                    <div id="goods_attr_son"></div>
+
+
+
+                                    <a class="layui-btn" lay-submit="" lay-filter="*" id="LAY-component-form-getval">生成表单</a>
+
+                                </div>
+
+                            </div>
+
+                            <fieldset class="layui-elem-field layui-field-title">
+                    <legend>商品设置</legend>
+     </fieldset>
+
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">库存预警: </label>
+                    <div class="layui-input-inline">
+                        当前库存量小于 <input type="number" min="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" value="144" name="min_inventory"> 时，商品库存报警
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">运费设置: </label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="keyword" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">前端显示位置: </label>
+                        <div class="layui-input-block">
+                            <input type="checkbox" name="like[write]" title="全部商品" checked="">
+                            <input type="checkbox" name="like[read]" title="首页">
+                            <input type="checkbox" name="like[game]" title="购物车">
+                        </div>
+                </div>
+
+     <fieldset class="layui-elem-field layui-field-title">
+                    <legend>详细内容</legend>
+     </fieldset>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">内容</label>
+                    <div class="layui-input-block" style="width:1000px;">
+                        <script id="container" name="body" style="height: 500px" type="text/plain"></script>
+                        </div>
+                        </div>
+                            <div class="layui-form-item">
+                            <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="submit">立即提交</button>
+
+                            </div>
+                            </div>
+   </form>
+
+
+
+
+
+
+
+</body>
+<script src="https://yelog.org/layui-select-multiple/layui/layui.js"></script>
+<!--<script src="/guanli/static/common/layui/layui.js"></script>-->
+<script>
+    var $form;
+    let i=1,j=1,k=1;
+    let goods_attr_json= '{ "attribute": [ { "id": "1", "name": "颜色", "status": false, "children": [ { "id": "2", "name": "蓝色", "status": false }, { "id": "3", "name": "黑色", "status": false }, { "id": "4", "name": "红色", "status": false }, { "id": "5", "name": "黄色", "status": false }, { "id": "6", "name": "粉色", "status": false }, { "id": "7", "name": "天蓝", "status": false }, { "id": "119", "name": "天蓝色", "status": false }, { "id": "120", "name": "棕色", "status": false }, { "id": "121", "name": "灰色", "status": false }, { "id": "124", "name": "白色", "status": false }, { "id": "129", "name": "珊瑚色玫瑰豆沙506", "status": false }, { "id": "160", "name": "深蓝色", "status": false }, { "id": "241", "name": "50", "status": false }, { "id": "291", "name": "青灰色", "status": false }, { "id": "295", "name": "银灰色", "status": false }, { "id": "317", "name": "【新品】16英寸 九代i7 16 1T灰", "status": false }, { "id": "318", "name": "【新品】16英寸 九代i7 16 256灰", "status": false } ] }, { "id": "8", "name": "尺码", "status": true, "children": [ { "id": "9", "name": "M", "status": false }, { "id": "10", "name": "L", "status": true }, { "id": "11", "name": "XL", "status": false }, { "id": "12", "name": "XXL", "status": false }, { "id": "118", "name": "S", "status": false }, { "id": "122", "name": "36", "status": false }, { "id": "123", "name": "37", "status": false }, { "id": "146", "name": "XS", "status": false }, { "id": "147", "name": "均码", "status": false }, { "id": "168", "name": "DF ", "status": false }, { "id": "169", "name": "DF ", "status": false }, { "id": "246", "name": "1", "status": false }, { "id": "247", "name": "1", "status": false }, { "id": "452", "name": "3XL", "status": false }, { "id": "455", "name": "2XL", "status": false }, { "id": "457", "name": "4XL", "status": false }, { "id": "479", "name": "S【90斤以下】", "status": false }, { "id": "481", "name": "XL【100-120斤】", "status": false }, { "id": "482", "name": "L【100-110斤】", "status": false }, { "id": "483", "name": "M【90-100斤】", "status": false }, { "id": "507", "name": "34", "status": false }, { "id": "509", "name": "38", "status": false }, { "id": "510", "name": "35", "status": false }, { "id": "511", "name": "39", "status": false }, { "id": "512", "name": "33", "status": false }, { "id": "514", "name": "42", "status": false }, { "id": "516", "name": "原板材质，穿不发黄", "status": false }, { "id": "518", "name": "40男款", "status": false }, { "id": "520", "name": "39男款", "status": false }, { "id": "522", "name": "标准码平时穿多大就拍多大", "status": false }, { "id": "523", "name": "升级版本，秀气版型显脚小", "status": false }, { "id": "525", "name": "40", "status": false }, { "id": "527", "name": "里外纯皮材质保真假一赔十", "status": false }, { "id": "528", "name": "香港买版原Y开模", "status": false }, { "id": "530", "name": "秋季新升级版更舒适柔软", "status": false }, { "id": "531", "name": "43", "status": false }, { "id": "532", "name": "41", "status": false }, { "id": "590", "name": "大码L", "status": false }, { "id": "592", "name": "大码XXXL", "status": false }, { "id": "593", "name": "大码XL", "status": false }, { "id": "594", "name": "大码XXL", "status": false } ] }, { "id": "16", "name": "默认1", "status": false, "children": [] }, { "id": "19", "name": "默认", "status": false, "children": [ { "id": "20", "name": "默认", "status": false }, { "id": "538", "name": "大小", "status": false } ] }, { "id": "126", "name": "数量", "status": false, "children": [ { "id": "127", "name": "2000张", "status": false }, { "id": "128", "name": "3000张", "status": false }, { "id": "300", "name": "1", "status": false }, { "id": "303", "name": "2", "status": false } ] }, { "id": "131", "name": "种类", "status": false, "children": [] }, { "id": "141", "name": "属性", "status": false, "children": [ { "id": "142", "name": "安卓版", "status": false }, { "id": "143", "name": "苹果版", "status": false } ] }, { "id": "144", "name": "颜色分类", "status": false, "children": [ { "id": "145", "name": "花色", "status": false }, { "id": "148", "name": "图片色", "status": false }, { "id": "162", "name": "湖蓝色", "status": false }, { "id": "170", "name": "红色", "status": false }, { "id": "171", "name": "紫色预定", "status": false }, { "id": "172", "name": "深灰色预定", "status": false }, { "id": "173", "name": "浅紫色预订", "status": false }, { "id": "174", "name": "薄荷绿", "status": false }, { "id": "175", "name": "墨绿色", "status": false }, { "id": "176", "name": "紫色", "status": false }, { "id": "177", "name": "深咖啡", "status": false }, { "id": "178", "name": "米白色预定", "status": false }, { "id": "179", "name": "驼色预定", "status": false }, { "id": "180", "name": "浅灰色预定", "status": false }, { "id": "181", "name": "宝蓝色预定", "status": false }, { "id": "182", "name": "粉红色", "status": false }, { "id": "183", "name": "藏青色", "status": false }, { "id": "184", "name": "黑色预定", "status": false }, { "id": "185", "name": "黑色", "status": false }, { "id": "186", "name": "深灰色", "status": false }, { "id": "187", "name": "薄荷绿预定", "status": false }, { "id": "188", "name": "墨绿色预定", "status": false }, { "id": "189", "name": "驼色", "status": false }, { "id": "190", "name": "米白色", "status": false }, { "id": "191", "name": "焦糖色", "status": false }, { "id": "192", "name": "浅紫色", "status": false }, { "id": "193", "name": "焦糖色预定", "status": false }, { "id": "194", "name": "宝蓝色", "status": false }, { "id": "195", "name": "浅灰色", "status": false }, { "id": "196", "name": "灰蓝色预定", "status": false }, { "id": "197", "name": "灰蓝色", "status": false }, { "id": "202", "name": "JB012 Emerson埃墨森", "status": false }, { "id": "205", "name": "JB007 Elena 埃琳娜", "status": false }, { "id": "207", "name": "JB008 Lowell 罗威尔", "status": false }, { "id": "208", "name": "JB004 Riddle 里德尔", "status": false }, { "id": "210", "name": "JB013 橙", "status": false }, { "id": "211", "name": "JB001 Sassoon 沙逊", "status": false }, { "id": "212", "name": "JB006 Britney 布兰妮", "status": false }, { "id": "213", "name": "JB009 Victor 维克多", "status": false }, { "id": "214", "name": "JB003 Milton 米尔顿", "status": false }, { "id": "215", "name": "JB005 Wendy 温蒂", "status": false }, { "id": "249", "name": "高档 霸气豪华手提皮盒10支装", "status": false }, { "id": "250", "name": "限量 任选一只口红＋爆款气垫", "status": false }, { "id": "251", "name": "YSL4支＋TF2支＋迪2支＋香2支", "status": false }, { "id": "252", "name": "藕荷色", "status": false }, { "id": "253", "name": "紫罗兰", "status": false }, { "id": "254", "name": "粉色", "status": false }, { "id": "255", "name": "深紫色", "status": false }, { "id": "256", "name": "姜黄色", "status": false }, { "id": "257", "name": "新品大气一朵独秀（夜光花）1支", "status": false }, { "id": "258", "name": "高贵黑丝绒银丝永生花＋纯银项链", "status": false }, { "id": "259", "name": "新品 高档炫酷金属皮盒 4支装", "status": false }, { "id": "260", "name": "柠檬黄", "status": false }, { "id": "261", "name": "明黄色", "status": false }, { "id": "262", "name": "栗色", "status": false }, { "id": "263", "name": "透明", "status": false }, { "id": "264", "name": "高档 限量65朵玫瑰 四大品牌", "status": false }, { "id": "265", "name": "限量升级版双重惊喜高档手提皮盒", "status": false }, { "id": "266", "name": "荧光黄", "status": false }, { "id": "267", "name": "金色", "status": false }, { "id": "268", "name": "16玫瑰最深的爱送最爱的你1支装", "status": false }, { "id": "269", "name": "高档限量升级版双重惊喜65朵玫瑰", "status": false }, { "id": "270", "name": "翠绿色", "status": false }, { "id": "271", "name": "新品 9朵玫瑰双重惊喜音乐盒1支", "status": false }, { "id": "272", "name": "YSL12阿玛尼口红 迪奥999羊皮307", "status": false }, { "id": "273", "name": "限量爆款12色眼影+口红2支＋气垫", "status": false }, { "id": "274", "name": "高档 霸气豪华手提皮盒 6支装", "status": false }, { "id": "275", "name": "36朵玫瑰 我的爱只留给你 4支装", "status": false }, { "id": "276", "name": "YSL 12＋阿玛尼口红＋纪梵希305", "status": false }, { "id": "277", "name": "高档 霸气豪华手提皮盒8支装", "status": false }, { "id": "278", "name": "卡其色", "status": false }, { "id": "279", "name": "深卡其布色", "status": false }, { "id": "280", "name": "桔色", "status": false }, { "id": "281", "name": "16玫瑰最深的爱送最爱的你3支装", "status": false }, { "id": "282", "name": "西瓜红", "status": false }, { "id": "283", "name": "一心一意只爱你勿忘我真干花 1支", "status": false }, { "id": "284", "name": "36朵玫瑰 我的爱只留给你 6支装", "status": false }, { "id": "285", "name": "新品大气一朵独秀（只有你）1支", "status": false }, { "id": "286", "name": "酒红色", "status": false }, { "id": "287", "name": "高档 霸气豪华手提皮盒12支装", "status": false }, { "id": "288", "name": "限量升级版双重惊喜65朵玫瑰高档", "status": false }, { "id": "289", "name": "大红色", "status": false }, { "id": "290", "name": "高档限量升级版双重惊喜手提皮盒", "status": false }, { "id": "298", "name": "黄色", "status": false }, { "id": "299", "name": "蓝色", "status": false }, { "id": "326", "name": "保湿款-护发素400ml", "status": false }, { "id": "329", "name": "3分钟奇迹发膜236ml", "status": false }, { "id": "330", "name": "蓬松款-护发素", "status": false }, { "id": "332", "name": "保湿款-洗发水360ml", "status": false }, { "id": "333", "name": "新款蓬松-洗发水360ML", "status": false }, { "id": "384", "name": "蜜糖色四门鞋柜", "status": false }, { "id": "385", "name": "浅胡桃换鞋凳", "status": false }, { "id": "386", "name": "板栗色两门鞋柜", "status": false }, { "id": "387", "name": "绿色", "status": false }, { "id": "388", "name": "军绿色", "status": false }, { "id": "389", "name": "浅胡桃四门鞋柜", "status": false }, { "id": "390", "name": "板栗色换鞋凳", "status": false }, { "id": "391", "name": "板栗色四门鞋柜+换鞋凳", "status": false }, { "id": "392", "name": "原木色四门鞋柜", "status": false }, { "id": "393", "name": "白色三门鞋柜", "status": false }, { "id": "394", "name": "浅绿色", "status": false }, { "id": "395", "name": "白色两门鞋柜", "status": false }, { "id": "396", "name": "原木色四门鞋柜+换鞋凳", "status": false }, { "id": "397", "name": "原木色三门鞋柜", "status": false }, { "id": "398", "name": "浅胡桃四门鞋柜+换鞋凳", "status": false }, { "id": "399", "name": "白色三门鞋柜+换鞋凳", "status": false }, { "id": "400", "name": "板栗色四门鞋柜", "status": false }, { "id": "401", "name": "板栗色三门鞋柜", "status": false }, { "id": "402", "name": "白色四门鞋柜", "status": false }, { "id": "403", "name": "浅胡桃三门鞋柜", "status": false }, { "id": "404", "name": "原木色两门鞋柜", "status": false }, { "id": "405", "name": "板栗色三门鞋柜+换鞋凳", "status": false }, { "id": "406", "name": "浅胡桃三门鞋柜+换鞋凳", "status": false }, { "id": "407", "name": "浅胡桃两门鞋柜", "status": false }, { "id": "408", "name": "原木色换鞋凳", "status": false }, { "id": "409", "name": "原木色三门鞋柜+换鞋凳", "status": false }, { "id": "435", "name": "米黄色【直径12cm实木底座】彩装", "status": false }, { "id": "436", "name": "米黄色【直径12cm实木底座】普装", "status": false }, { "id": "437", "name": "紫蓝粉【直径20cm实木底座】", "status": false }, { "id": "438", "name": "蓝橘黄【直径20cm实木底座】", "status": false }, { "id": "439", "name": "高贵紫【直径20cm实木底座】", "status": false }, { "id": "440", "name": "麻本色【直径20cm实木底座】", "status": false }, { "id": "441", "name": "浪漫粉【直径20cm实木底座】", "status": false }, { "id": "442", "name": "典雅白【直径20cm实木底座】", "status": false }, { "id": "443", "name": "麻本色【直径12cm实木底座】彩装", "status": false }, { "id": "444", "name": "天空蓝【直径20cm实木底座】", "status": false }, { "id": "445", "name": "天蓝色【直径12cm实木底座】彩装", "status": false }, { "id": "446", "name": "米黄色【直径20cm实木底座】", "status": false }, { "id": "447", "name": "麻本色【直径12cm实木底座】普装", "status": false }, { "id": "448", "name": "天蓝色【直径12cm实木底座】普装", "status": false }, { "id": "453", "name": "9328 蓝色", "status": false }, { "id": "454", "name": "9534 香杏", "status": false }, { "id": "456", "name": "9326 红色", "status": false }, { "id": "458", "name": "9536 蓝色", "status": false }, { "id": "459", "name": "9096 红凤", "status": false }, { "id": "460", "name": "9535 蓝桔", "status": false }, { "id": "461", "name": "9326 元宝蓝", "status": false }, { "id": "462", "name": "9539 黑色", "status": false }, { "id": "463", "name": "9328 绿色", "status": false }, { "id": "464", "name": "9328 黑色", "status": false }, { "id": "465", "name": "9328 紫红色", "status": false }, { "id": "466", "name": "9328 卡其色", "status": false }, { "id": "467", "name": "9328 亮灰", "status": false }, { "id": "468", "name": "8096 蓝色", "status": false }, { "id": "469", "name": "9096 金丝兰", "status": false }, { "id": "470", "name": "9326 白色", "status": false }, { "id": "471", "name": "9536 灰色", "status": false }, { "id": "472", "name": "9539 杏色", "status": false }, { "id": "473", "name": "9534 蓝桔", "status": false }, { "id": "474", "name": "9328 杏色", "status": false }, { "id": "475", "name": "9326 蓝色", "status": false }, { "id": "476", "name": "9328 荧光粉", "status": false }, { "id": "477", "name": "9535 杏黄", "status": false }, { "id": "478", "name": "9328 酒红色", "status": false }, { "id": "480", "name": "杏色", "status": false }, { "id": "484", "name": "all black娃娃版【48H】", "status": false }, { "id": "485", "name": "巴洛克收腰版（短款）【现】", "status": false }, { "id": "486", "name": "巴洛克收腰版（长款）【现】", "status": false }, { "id": "487", "name": "巴洛克吊带裙【48H】", "status": false }, { "id": "488", "name": "人鱼姬粉金吊带裙【48H】", "status": false }, { "id": "489", "name": "all black收腰版（短款）【48H】", "status": false }, { "id": "490", "name": "巴洛克娃娃版【48H】", "status": false }, { "id": "491", "name": "蓝风铃吊带裙【48H】", "status": false }, { "id": "492", "name": "人鱼姬粉金收腰版（短款）【48H", "status": false }, { "id": "493", "name": "人鱼姬粉金娃娃版【48H】", "status": false }, { "id": "494", "name": "人鱼姬粉金收腰版（长款）【48H", "status": false }, { "id": "495", "name": "all black吊带裙【48H】", "status": false }, { "id": "506", "name": "Energy Noir 浆果色唇膏笔 现货", "status": false }, { "id": "508", "name": "橘色", "status": false }, { "id": "513", "name": "牛皮黑尾", "status": false }, { "id": "515", "name": "银色尾", "status": false }, { "id": "517", "name": "粉色尾", "status": false }, { "id": "519", "name": "全白色", "status": false }, { "id": "521", "name": "金色尾", "status": false }, { "id": "524", "name": "反光款", "status": false }, { "id": "526", "name": "彩虹尾", "status": false }, { "id": "529", "name": "磨砂黑尾", "status": false }, { "id": "591", "name": "乳白色", "status": false }, { "id": "595", "name": "乳白色预售", "status": false }, { "id": "638", "name": "双门119L金色 冷藏+冷冻", "status": false }, { "id": "639", "name": "三门136L银色 冷藏+冷冻+软冷冻", "status": false }, { "id": "640", "name": "三门156L银色 冷藏+冷冻+软冷冻", "status": false }, { "id": "641", "name": "双门119L银色 （抗菌款）", "status": false }, { "id": "642", "name": "单门65L 白色 单冷藏", "status": false }, { "id": "643", "name": "双门119L银色 冷藏+冷冻", "status": false }, { "id": "644", "name": "单门65L 橙色 单冷藏", "status": false }, { "id": "645", "name": "双门119L橙色 冷藏+冷冻", "status": false }, { "id": "646", "name": "单门65L 蓝色 单冷藏", "status": false }, { "id": "647", "name": "双门119L蓝色 冷藏+冷冻", "status": false }, { "id": "648", "name": "双门126L银色（抗菌款）", "status": false }, { "id": "649", "name": "双门126L银色 冷藏+冷冻", "status": false }, { "id": "650", "name": "双门126L蓝色 冷藏+冷冻", "status": false }, { "id": "651", "name": "双门126L金色 冷藏+冷冻", "status": false }, { "id": "652", "name": "100只装店长推荐爆款", "status": false }, { "id": "653", "name": "50只装", "status": false }, { "id": "654", "name": "500只装", "status": false }, { "id": "655", "name": "200只装店长推荐爆款", "status": false }, { "id": "657", "name": "原木色（40cm高加厚床+床垫）", "status": false }, { "id": "661", "name": "新款原木床+抽屉(加厚)", "status": false }, { "id": "663", "name": "原木色（40cm加厚床+双抽+床垫）", "status": false }, { "id": "665", "name": "新款环保清漆床+抽屉(加厚)", "status": false }, { "id": "666", "name": "原木色（40cm高加厚床+双抽）", "status": false }, { "id": "667", "name": "新款原木床+抽屉+床垫(加厚)", "status": false }, { "id": "668", "name": "原木色（30cm高加厚床）", "status": false }, { "id": "670", "name": "新款环保清漆裸床(加厚)", "status": false }, { "id": "671", "name": "原木色（30cm高加厚床+床垫）", "status": false }, { "id": "672", "name": "原木色（40cm高加厚床）", "status": false }, { "id": "673", "name": "新款环保清漆床+抽屉+床垫(加厚)", "status": false }, { "id": "674", "name": "新款环保清漆床+床垫(加厚)", "status": false }, { "id": "675", "name": "新款原木裸床（加厚）", "status": false }, { "id": "676", "name": "新款环保白漆床+抽屉+床垫(加厚)", "status": false }, { "id": "677", "name": "原木色（30cm加厚床+双抽+床垫）", "status": false }, { "id": "678", "name": "新款环保白漆裸床(加厚)", "status": false }, { "id": "679", "name": "新款原木床+床垫(加厚)", "status": false }, { "id": "680", "name": "新款环保白漆床+床垫(加厚)", "status": false }, { "id": "681", "name": "新款环保白漆床+抽屉(加厚)", "status": false }, { "id": "682", "name": "原木色（30cm高加厚床+双抽）", "status": false } ] }, { "id": "151", "name": "鞋码", "status": false, "children": [ { "id": "152", "name": "42", "status": false }, { "id": "154", "name": "43", "status": false }, { "id": "155", "name": "44", "status": false }, { "id": "156", "name": "45", "status": false }, { "id": "157", "name": "46", "status": false }, { "id": "158", "name": "47", "status": false }, { "id": "159", "name": "41", "status": false } ] }, { "id": "163", "name": "计价单位", "status": false, "children": [ { "id": "243", "name": "件", "status": false } ] }, { "id": "165", "name": "DFD ", "status": false, "children": [ { "id": "166", "name": "D", "status": false }, { "id": "167", "name": "D", "status": false } ] }, { "id": "200", "name": "款式", "status": false, "children": [ { "id": "201", "name": "床笠款", "status": false }, { "id": "209", "name": "床单款", "status": false }, { "id": "216", "name": "2020", "status": false } ] }, { "id": "203", "name": "适用床尺寸", "status": false, "children": [ { "id": "204", "name": "M:四件套（适合被芯是200x230）", "status": false }, { "id": "206", "name": "L:四件套（适合被芯是220x240）", "status": false } ] }, { "id": "217", "name": "硬盘大小", "status": false, "children": [ { "id": "218", "name": "256G", "status": false }, { "id": "225", "name": "500G", "status": false }, { "id": "226", "name": "1T", "status": false }, { "id": "238", "name": "1024", "status": false } ] }, { "id": "219", "name": "内存大小", "status": false, "children": [ { "id": "220", "name": "8G@####", "status": false }, { "id": "223", "name": "16G", "status": false }, { "id": "224", "name": "32G", "status": false }, { "id": "237", "name": "256", "status": false } ] }, { "id": "231", "name": "12", "status": false, "children": [ { "id": "232", "name": "12", "status": false }, { "id": "233", "name": "11", "status": false } ] }, { "id": "293", "name": "LKT_KW_1", "status": false, "children": [] }, { "id": "294", "name": "口味", "status": false, "children": [ { "id": "338", "name": "麻辣", "status": false }, { "id": "339", "name": "香辣", "status": false }, { "id": "496", "name": "大刀肉250g*5袋【约175个大份】", "status": false }, { "id": "497", "name": "大刀肉250g*6袋【约210个囤货】", "status": false }, { "id": "498", "name": "大刀肉250g*3袋【约105个划算】", "status": false }, { "id": "499", "name": "大刀肉132g*1袋【新品尝鲜】", "status": false }, { "id": "500", "name": "大刀肉250g*4袋【约140个推荐】", "status": false }, { "id": "501", "name": "大刀肉250g*1袋【约35个尝鲜】", "status": false }, { "id": "502", "name": "大刀肉250g*2袋【约70个人气】", "status": false } ] }, { "id": "296", "name": "规格", "status": false, "children": [ { "id": "297", "name": "木质", "status": false }, { "id": "301", "name": "1", "status": false }, { "id": "302", "name": "2", "status": false }, { "id": "503", "name": "50ml", "status": false }, { "id": "624", "name": "5片", "status": false } ] }, { "id": "304", "name": "机身颜色", "status": false, "children": [ { "id": "305", "name": "黑色", "status": false }, { "id": "312", "name": "白色", "status": false }, { "id": "596", "name": "iphone8 红色 4.7寸", "status": false }, { "id": "597", "name": "iphone8 白色 4.7寸", "status": false }, { "id": "599", "name": "iphone8 金色 4.7寸", "status": false }, { "id": "600", "name": "iphone8 黑色 4.7寸", "status": false }, { "id": "602", "name": "苹果 5.8寸【白色】", "status": false }, { "id": "603", "name": "苹果 6.1寸【红色】", "status": false }, { "id": "604", "name": "苹果 6.1寸【珊瑚色】", "status": false }, { "id": "605", "name": "苹果 6.1寸【黄色】", "status": false }, { "id": "607", "name": "苹果xs max【有锁预定 】", "status": false }, { "id": "608", "name": "苹果 5.8寸【金色】", "status": false }, { "id": "609", "name": "苹果 6.1寸【黑色】", "status": false }, { "id": "610", "name": "苹果 6.1寸【白色】", "status": false }, { "id": "611", "name": "苹果xs max 6.5寸【黑色】", "status": false }, { "id": "612", "name": "苹果xs max 6.5寸【金色】", "status": false }, { "id": "613", "name": "苹果 6.1寸【蓝色】", "status": false }, { "id": "614", "name": "苹果xs max 6.5寸【白色】", "status": false }, { "id": "615", "name": "苹果 5.8寸【黑色】", "status": false }, { "id": "616", "name": "iPhone 11 黄色 6.1英寸", "status": false }, { "id": "618", "name": "iPhone 11 红色 6.1英寸", "status": false }, { "id": "619", "name": "iPhone 11 绿色 6.1英寸", "status": false }, { "id": "620", "name": "iPhone 11 黑色 6.1英寸", "status": false }, { "id": "621", "name": "iPhone 11 紫色 6.1英寸", "status": false }, { "id": "622", "name": "iPhone 11 红色（有锁单机）", "status": false }, { "id": "623", "name": "iPhone 11 白色 6.1英寸", "status": false } ] }, { "id": "306", "name": "套餐类型", "status": false, "children": [ { "id": "307", "name": "官方标配", "status": false }, { "id": "598", "name": "套餐一", "status": false }, { "id": "617", "name": "套餐二", "status": false } ] }, { "id": "308", "name": "存储容量", "status": false, "children": [ { "id": "309", "name": "128GB", "status": false }, { "id": "313", "name": "64GB", "status": false }, { "id": "601", "name": "256GB", "status": false }, { "id": "606", "name": "512GB", "status": false } ] }, { "id": "310", "name": "版本类型", "status": false, "children": [ { "id": "311", "name": "中国大陆", "status": false } ] }, { "id": "321", "name": "看看这", "status": false, "children": [ { "id": "322", "name": "可可", "status": false } ] }, { "id": "323", "name": "主要颜色", "status": false, "children": [ { "id": "324", "name": "玉米奶杏", "status": false }, { "id": "325", "name": "玉米奶杏下批预售", "status": false } ] }, { "id": "327", "name": "化妆品净含量", "status": false, "children": [ { "id": "328", "name": "400mL", "status": false }, { "id": "331", "name": "其他/other", "status": false } ] }, { "id": "368", "name": "34", "status": false, "children": [] }, { "id": "372", "name": "秒杀", "status": false, "children": [ { "id": "373", "name": "秒杀", "status": false } ] }, { "id": "374", "name": "2", "status": false, "children": [ { "id": "375", "name": "2", "status": false }, { "id": "378", "name": "1", "status": false } ] }, { "id": "376", "name": "32", "status": false, "children": [ { "id": "377", "name": "2", "status": false } ] }, { "id": "379", "name": "222", "status": false, "children": [ { "id": "380", "name": "33", "status": false }, { "id": "381", "name": "222", "status": false } ] }, { "id": "382", "name": "安装方式", "status": false, "children": [ { "id": "383", "name": "整装", "status": false } ] }, { "id": "420", "name": "55", "status": false, "children": [] }, { "id": "424", "name": "尺寸", "status": false, "children": [ { "id": "425", "name": "大尺寸", "status": false }, { "id": "656", "name": "1500mm*2000mm", "status": false }, { "id": "660", "name": "1200mm*2000mm", "status": false }, { "id": "662", "name": "1000mm*2000mm", "status": false }, { "id": "664", "name": "1350mm*2000mm", "status": false }, { "id": "669", "name": "1800mm*2000mm", "status": false } ] }, { "id": "426", "name": "标题长度标题长度标题长度", "status": false, "children": [ { "id": "427", "name": "标题长度标题长度", "status": false }, { "id": "431", "name": "标题长度", "status": false }, { "id": "432", "name": "标题", "status": false } ] }, { "id": "428", "name": "属性属性属性属性", "status": false, "children": [ { "id": "429", "name": "属性属性属性属性", "status": false }, { "id": "430", "name": "属性属性", "status": false } ] }, { "id": "449", "name": "健身课程", "status": false, "children": [ { "id": "450", "name": "60分钟", "status": false }, { "id": "451", "name": "90分钟", "status": false } ] }, { "id": "504", "name": "土豪", "status": false, "children": [ { "id": "505", "name": "非常土豪", "status": false } ] }, { "id": "533", "name": "测试", "status": false, "children": [ { "id": "534", "name": "csa", "status": false }, { "id": "535", "name": "csb", "status": false } ] }, { "id": "536", "name": "cs", "status": false, "children": [ { "id": "537", "name": "u", "status": false } ] }, { "id": "539", "name": "油耗大小", "status": false, "children": [ { "id": "540", "name": "油耗低", "status": false }, { "id": "541", "name": "油耗高", "status": false }, { "id": "542", "name": "大", "status": false }, { "id": "543", "name": "小", "status": false } ] }, { "id": "544", "name": "油耗值", "status": false, "children": [ { "id": "545", "name": "大", "status": false }, { "id": "546", "name": "中", "status": false }, { "id": "547", "name": "小", "status": false } ] }, { "id": "548", "name": "版本1", "status": false, "children": [ { "id": "549", "name": "高", "status": false }, { "id": "550", "name": "中", "status": false }, { "id": "551", "name": "底", "status": false } ] }, { "id": "552", "name": "编码", "status": false, "children": [ { "id": "553", "name": "1112", "status": false }, { "id": "564", "name": "长效防冻液（马石油）35/2KG轻负荷", "status": false }, { "id": "565", "name": "长效防冻液（马石油）35/4KG轻负荷", "status": false } ] }, { "id": "554", "name": "图号", "status": false, "children": [ { "id": "555", "name": "222", "status": false } ] }, { "id": "556", "name": "刹车片", "status": false, "children": [ { "id": "557", "name": "222222", "status": false } ] }, { "id": "558", "name": "刹车片型号", "status": false, "children": [ { "id": "559", "name": "后刹车片(孚斯特)", "status": false }, { "id": "563", "name": "3501.6B-105*", "status": false } ] }, { "id": "560", "name": "马石油", "status": false, "children": [ { "id": "561", "name": "润滑油", "status": false }, { "id": "562", "name": "机油", "status": false } ] }, { "id": "566", "name": "适用车型", "status": false, "children": [ { "id": "567", "name": "重卡", "status": false }, { "id": "568", "name": "小汽车", "status": false } ] }, { "id": "569", "name": "大小", "status": false, "children": [ { "id": "570", "name": "1", "status": false }, { "id": "571", "name": "2", "status": false }, { "id": "572", "name": "3", "status": false }, { "id": "573", "name": "4", "status": false }, { "id": "574", "name": "5", "status": false }, { "id": "575", "name": "6", "status": false }, { "id": "576", "name": "7", "status": false }, { "id": "577", "name": "8", "status": false }, { "id": "578", "name": "9", "status": false } ] }, { "id": "579", "name": "测试1", "status": false, "children": [ { "id": "580", "name": "11", "status": false }, { "id": "581", "name": "111", "status": false }, { "id": "582", "name": "333", "status": false } ] }, { "id": "583", "name": "排量", "status": false, "children": [ { "id": "584", "name": "6.0", "status": false }, { "id": "585", "name": "5.0", "status": false }, { "id": "586", "name": "4.0", "status": false } ] }, { "id": "587", "name": "卖报卖报", "status": false, "children": [ { "id": "588", "name": "222", "status": false }, { "id": "589", "name": "222", "status": false } ] }, { "id": "625", "name": "食品口味", "status": false, "children": [ { "id": "626", "name": "越南玉娇芒果干108g*3袋【超值】", "status": false }, { "id": "627", "name": "芒果干+黄桃干+凤梨干【108g*3】", "status": false }, { "id": "628", "name": "越南玉娇芒果干108g*1袋【体验】", "status": false }, { "id": "629", "name": "越南玉娇芒果干256g*1袋【家庭】", "status": false }, { "id": "630", "name": "越南玉娇芒果干108g*2袋【性价】", "status": false }, { "id": "631", "name": "越南玉娇芒果干256g*2袋【聚会】", "status": false } ] }, { "id": "658", "name": "家具结构", "status": false, "children": [ { "id": "659", "name": "框架结构", "status": false } ] } ] }';
+    goods_attr_json = JSON.parse(goods_attr_json);
+    layui.use(['form', 'layer','upload','laydate','layedit'], function () {
+        var form = layui.form, layer = layui.layer, $ = layui.jquery, laydate = layui.laydate, upload = layui.upload;
+        var layedit = layui.layedit;
+        $ = layui.$;
+        // form.on('submit(submit)', function (data) {
+        //     // console.log('传输的数据');
+        //     // console.log(data.field);
+        //     loading = layer.load(1, {shade: [0.1, '#fff']});
+        //     $.post("", data.field, function (res) {
+        //         layer.close(loading);
+        //         if (res.code == "1") {
+        //             layer.msg(res.msg, {time: 1800, icon: 1}, function () {
+        //                 location.href = "{:url('weblist')}";
+        //             });
+        //         } else {
+        //             layer.msg(res.msg, {time: 1800, icon: 2});
+        //             location.href = "{:url('weblist')}";
+        //         }
+        //     });
+        // });
+
+    });
+     var catData = [{"id":1,"name":"\u624b\u673a\u6570\u7801"},{"id":2,"name":"\u793c\u54c1\u9c9c\u82b1"},{"id":3,"name":"\u7537\u88c5\u5973\u88c5"},{"id":4,"name":"\u6bcd\u5a74\u7528\u54c1"},{"id":5,"name":"\u624b\u673a\u901a\u8baf","children":[{"id":7,"name":"\u5168\u9762\u5c4f\u624b\u673a"},{"id":8,"name":"\u6e38\u620f\u624b\u673a"}]}];
+    // console.log(catData);
+    layui.config({
+        base : './'
+    }).extend({
+        selectN: './layui_extends/selectN',
+        selectM: './layui_extends/selectM',
+    }).use(['layer','form','jquery','selectN','selectM'],function(){
+        $ = layui.jquery;
+        var form = layui.form
+            ,selectN = layui.selectN
+            ,selectM = layui.selectM;
+
+
+        //无限级分类-基本配置
+        var catIns1 = selectN({
+            //元素容器【必填】
+            elem: '#cat_ids1'
+            ,search:[false,true]
+            //候选数据【必填】
+            ,data: catData
+        });
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip({
+                animation: false,
+            });
+        });
+
+        form.on('submit(demo)',function(data){
+            console.log('catIns1 当前选中的值名：',catIns1.selected);
+            console.log('catIns1 当前选中的值：',catIns1.values);
+            console.log('catIns1 当前选中的名：',catIns1.names);
+            console.log('catIns1 当前最后一个选中值：',catIns1.lastValue);
+            console.log('catIns1 当前最后一个选中名：',catIns1.lastName);
+            console.log('catIns1 当前最后一个是否已选：',catIns1.isSelected);
+
+            var formData = data.field;
+            console.log('表单对象：',formData);
+        })
+
+        //通过js动态选择
+        $('.set1').click(function(){
+            catIns1.set([6,10]);
+
+        });
+        //监听重置按钮
+        $('form').find(':reset').click(function(){
+            $('form')[0].reset();
+            catIns1.set();//默认值
+
+
+            return false;
+        });
+
+            $.post('{:url("get_goodsBrand")}', function (result) {
+                result = JSON.parse(result);
+                for (v in result) {
+                    $("#goods_brand").append("<option value=" + result[v].id + ">" + result[v].name + "</option>")
+                }
+                form.render();
+            })
+
+
+        $.post('{:url("getGoodsUnit")}', function (result) {
+            result = JSON.parse(result);
+            // console.log(result);
+            temp = result['data'];
+            for (v in temp) {
+
+                $("#goods_unit").append("<option value=" + temp[v].name + ">" + temp[v].name + "</option>")
+            }
+            form.render();
+        })
+
+
+
+
+        $.post('{:url("getAttribute")}', function (result) {
+            console.log('here');
+            result =  JSON.parse(result);
+             temp = result['attribute'];
+            for (v in temp) {
+               $("#goods_attr").append("<option value=" + temp[v].name + ">" + temp[v].name + "</option>")
+            }
+            // 手动赋值
+            $('select[name="goods_attr"]').val(['颜色']);
+            form.render();
+        })
+        // console.log('goods_attr_json'+goods_attr_json);
+        form.on('select(multi)', function (data) {
+            //console.log(data.elem); //得到select原始DOM对象
+            console.log('被选中的值');
+            console.log(data.value); //得到被选中的值
+            var str = '';
+            attr_2 = goods_attr_json['attribute'];
+            // console.log(attr_2);
+            $.each(attr_2, function(i, item){
+                if($.inArray(item.name,data.value) != -1){
+                    console.log(item.name);
+                    str += '<label class="layui-form-label">'+ item.name +'</label>';
+                    str += '<div class="layui-input-block">';
+                            $.each(item.children, function(i, item){
+                                console.log(item.name);
+                                 str += '<input type="checkbox"  name="attr['+item.name+']" title="'+item.name+'">';
+                            })
+                    str += '</div>';
+                }
+            });
+            $('#goods_attr_son').html(str);
+            //console.log(data.othis); //得到美化后的DOM对象
+          //  console.log('当前操作的值'+data.current_value); //当前操作的值
+            form.render();
+        })
+        //表单赋值
+        layui.$('#LAY-component-form-setval').on('click', function(){
+            form.val('example', {
+                "username": "贤心" // "name": "value"
+                ,"password": "123456"
+                ,"interest": 1
+                ,"like[write]": true //复选框选中状态
+                ,"close": true //开关状态
+                ,"sex": "女"
+                ,"desc": "我爱 layui"
+            });
+        });
+        //表单取值
+        layui.$('#LAY-component-form-getval').on('click', function(){
+            var data = form.val('example');
+            alert(JSON.stringify(data));
+        });
+    });
+</script>
+<style>
+    .layui-input-inline{
+        width:300px !important;
+    }
+
+
+
+    .from_i {
+        width: 80px;
+    }
+    .form_new_file {
+        display: flex;
+        margin: auto;
+        justify-content: center;
+        border: 1px solid #D5DBE8;
+        height: 80px;
+        width: 80px;
+    }
+    .from_i img {
+        border: 0!important;
+        width: 22px;
+        height: 22px;
+        background-color: transparent;
+        background-size: 100% 100%;
+        margin: auto!important;
+        display: block;
+    }
+
+    .form_new_span {
+        color: #888F9E!important;
+        margin-top: 5px!important;
+    }
+    .formInputSD .addText {
+        font-size: 14px!important;
+        color: #97A0B4;
+        margin-left: 10px;
+    }
+    .btn-secondary {
+        color: #292b2c;
+        background-color: #fff;
+        border-color: #ccc;
+    }
+    img {
+        vertical-align: middle;
+    }
+
+
+
+</style>
+<style>
+    /* 下拉多选样式 需要引用*/
+    select[multiple]+.layui-form-select>.layui-select-title>input.layui-input{ border-bottom: 0}
+    select[multiple]+.layui-form-select dd{ padding:0;}
+    select[multiple]+.layui-form-select .layui-form-checkbox[lay-skin=primary]{ margin:0 !important; display:block; line-height:36px !important; position:relative; padding-left:26px;}
+    select[multiple]+.layui-form-select .layui-form-checkbox[lay-skin=primary] span{line-height:36px !important;padding-left: 10px; float:none;}
+    select[multiple]+.layui-form-select .layui-form-checkbox[lay-skin=primary] i{ position:absolute; left:10px; top:0; margin-top:9px;}
+    .multiSelect{ line-height:normal; height:auto; padding:4px 10px; overflow:hidden;min-height:38px; margin-top:-38px; left:0; z-index:99;position:relative;background:none;}
+    .multiSelect a{ padding:2px 5px; background:#908e8e; border-radius:2px; color:#fff; display:block; line-height:20px; height:20px; margin:2px 5px 2px 0; float:left;}
+    .multiSelect a span{ float:left;}
+    .multiSelect a i {float:left;display:block;margin:2px 0 0 2px;border-radius:2px;width:8px;height:8px;padding:4px;position:relative;-webkit-transition:all .3s;transition:all .3s}
+    .multiSelect a i:before, .multiSelect a i:after {position:absolute;left:8px;top:2px;content:'';height:12px;width:1px;background-color:#fff}
+    .multiSelect a i:before {-webkit-transform:rotate(45deg);transform:rotate(45deg)}
+    .multiSelect a i:after {-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}
+    .multiSelect a i:hover{ background-color:#545556;}
+    .multiOption{display: inline-block; padding: 0 5px;cursor: pointer; color: #999;}
+    .multiOption:hover{color: #5FB878}
+
+    @font-face {font-family: "iconfont"; src: url('data:application/x-font-woff;charset=utf-8;base64,d09GRgABAAAAAAaoAAsAAAAACfwAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABHU1VCAAABCAAAADMAAABCsP6z7U9TLzIAAAE8AAAARAAAAFZW7kokY21hcAAAAYAAAABwAAABsgdU06BnbHlmAAAB8AAAAqEAAAOUTgbbS2hlYWQAAASUAAAALwAAADYR+R9jaGhlYQAABMQAAAAcAAAAJAfeA4ZobXR4AAAE4AAAABMAAAAUE+kAAGxvY2EAAAT0AAAADAAAAAwB/gLGbWF4cAAABQAAAAAfAAAAIAEVAGhuYW1lAAAFIAAAAUUAAAJtPlT+fXBvc3QAAAZoAAAAPQAAAFBD0CCqeJxjYGRgYOBikGPQYWB0cfMJYeBgYGGAAJAMY05meiJQDMoDyrGAaQ4gZoOIAgCKIwNPAHicY2Bk/s04gYGVgYOpk+kMAwNDP4RmfM1gxMjBwMDEwMrMgBUEpLmmMDgwVLwwZ27438AQw9zA0AAUZgTJAQAokgyoeJzFkTEOgCAQBOdAjTH+wtbezvggKyteTPyFLpyFvsC9DNnbHIEA0AJRzKIBOzCKdqVW88hQ84ZN/UBPUKU85fVcrkvZ27tMc17FR+0NMh2/yf47+quxrtvT6cVJD7pinpzyI3l1ysy5OIQbzBsVxHicZVM9aBRBFJ43c7szyeV2s/97m9zP3ppb5ZID72+9iJfDnyIiGImCMZWFXaKdaSyuESJYCFZpRZBUCpaJcCCKaexsRVHQytrC2/Pt5ZSIy+z3vvnemwfvY4ZIhAw/s33mEoMcJyfJebJCCMgVKCk0B37YqNIKWL5kOabCwiD0eVCqsjPglGTTrrUaZUfmsgoK5KHu11phlYbQbHToaajZOYDsjLeqz83q7BFMumH+fnyRPgGrEMyqnYV4eX7JrBUNsTWl61ldfyhkSRKUplQFNh17QpqYlOOnkupZ+4UTtABT2dC7tJYpzug3txu3c3POBECvB8ZMUXm2pHkarnuebehZPp0RrpcJjpmw9TXtGlO58heCXwpnfcVes7PExknPkVWctFxSIUxANgs4Q9RaglYjjIKwCqGvANfy4NQtBL8DkYaipAVVaGqNVuTnoQBYg8NzHzNaJ7HAdpjFXfF2DSEjxF2ui7T8ifP2CsBiZTCsLCbxCv4UDvlgp+kFgQcHXgAQP64s0gdQdOOKWwSM8CGJz4V4c11gQwc70hTlH4XLv12dbwO052OotGHMYYj8VrwDJQ/eeSXA2Ib24Me42XvX993ECxm96LM+6xKdBCRCNy6TdfSDoxmJFXYBaokV5RL7K/0nOHZ9rBl+chcCP7kVMML6SGHozx8Od3ZvCEvlm5KQ0nxPTJtiLHD7ny1jsnxYsAF7imkq8QVEOBgF5Yh0yNkpPIenN2QAsSdMNX6xu85VC/tiE3Mat6P8JqWM73NLhZ9mzjBy5uAlAlJYBiMRDPQleQ+9FEFfJJImGnHQHWIEmm/5UB8h8uaIIzrc4SEPozByel3oDvFcN+4D+dU/uou/L2xv/1mUQBdTCIN+jGUEgV47UkB+Aw7YpAMAAAB4nGNgZGBgAGLbQwYd8fw2Xxm4WRhA4HrO20sI+n8DCwOzE5DLwcAEEgUAPX4LPgB4nGNgZGBgbvjfwBDDwgACQJKRARWwAgBHCwJueJxjYWBgYH7JwMDCgMAADpsA/QAAAAAAAHYA/AGIAcp4nGNgZGBgYGWIYWBjAAEmIOYCQgaG/2A+AwASVwF+AHicZY9NTsMwEIVf+gekEqqoYIfkBWIBKP0Rq25YVGr3XXTfpk6bKokjx63UA3AejsAJOALcgDvwSCebNpbH37x5Y08A3OAHHo7fLfeRPVwyO3INF7gXrlN/EG6QX4SbaONVuEX9TdjHM6bCbXRheYPXuGL2hHdhDx18CNdwjU/hOvUv4Qb5W7iJO/wKt9Dx6sI+5l5XuI1HL/bHVi+cXqnlQcWhySKTOb+CmV7vkoWt0uqca1vEJlODoF9JU51pW91T7NdD5yIVWZOqCas6SYzKrdnq0AUb5/JRrxeJHoQm5Vhj/rbGAo5xBYUlDowxQhhkiMro6DtVZvSvsUPCXntWPc3ndFsU1P9zhQEC9M9cU7qy0nk6T4E9XxtSdXQrbsuelDSRXs1JErJCXta2VELqATZlV44RelzRiT8oZ0j/AAlabsgAAAB4nGNgYoAALgbsgJWRiZGZkYWRlZGNgbGCuzw1MykzMb8kU1eXs7A0Ma8CiA05CjPz0rPz89IZGADc3QvXAAAA') format('woff')}
+    .iconfont {font-family:"iconfont" !important;font-size:16px;font-style:normal;-webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;}
+    .icon-fanxuan:before { content: "\e837"; }
+    .icon-quanxuan:before { content: "\e623"; }
+    .icon-qingkong:before { content: "\e63e"; }
+</style>

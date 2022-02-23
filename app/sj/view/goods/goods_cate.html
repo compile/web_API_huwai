@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>产品</title>
+    <link rel="stylesheet" href="/design/css/layui.css">
+    <script src="/design/layui.js"></script>
+</head>
+<body class="layui-layout-body" style="padding: 10px">
+<a class="layui-btn layui-btn-primary"  onclick="window.location.href='goodsCate.html';">刷新</a>
+<a class="layui-btn layui-btn-primary"  onclick="add();">新增一行</a>
+<a class="layui-btn layui-btn-primary"  onclick="print();">打印缓存对象</a>
+<div>
+    <table class="layui-hidden" id="treeTable" lay-filter="treeTable"></table>
+</div>
+<script>
+    var editObj=null,ptable=null,treeGrid=null,tableId='treeTable',layer=null;
+    layui.config({
+        base: 'design/extend/'
+    }).extend({
+        treeGrid:'treeGrid'
+    }).use(['jquery','treeGrid','layer','table', 'util'], function(){
+        var $=layui.jquery;
+        table = layui.table,util = layui.util;
+        treeGrid = layui.treeGrid;//很重要
+        layer=layui.layer;
+        ptable=treeGrid.render({
+            id:tableId
+            ,elem: '#'+tableId
+            ,idField:'id'
+            ,url:'{:url("goodsgrade")}'
+            ,cellMinWidth: 100
+            ,treeId:'id'//树形id字段名称
+            ,treeUpId:'pId'//树形父id字段名称
+            ,treeShowName:'name'//以树形式显示的字段
+            ,cols: [[
+                {width:150,title: '操作', align:'center'/*toolbar: '#barDemo'*/
+                    ,templet: function(d){
+                        var html='';
+                        var addBtn='<a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="add">添加</a>';
+                        var delBtn='<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>';
+                        var saveBtn='<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="save">修改</a>';
+                        return addBtn+delBtn+saveBtn;
+                    }
+                }
+                ,{field:'name', edit:'text',width:300, title: '产品名称'}
+                ,{field:'id',width:100, title: 'id'}
+                ,{field:'pId', title: 'pid'}
+            ]]
+            ,page:false,
+        });
+
+        treeGrid.on('tool('+tableId+')',function (obj) {
+            if(obj.event === 'del'){
+                del(obj);
+            }else if(obj.event === "add"){
+                add(obj.data);
+            }else if(obj.event === "save"){
+                save(obj.data);
+            }
+        });
+
+        //监听单元格编辑
+        table.on('edit(treeTable)', function(obj){
+            var value = obj.value //得到修改后的值
+                ,data = obj.data //得到所在行所有键值
+                ,field = obj.field; //得到字段
+            layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改值为：'+ util.escape(value));
+        });
+
+
+
+
+        function del(obj) {
+            console.log(obj);
+            $.post("{:url('delGrade')}", {id: obj.id,data:obj}, function (res) {
+                console.log('res:');
+                console.log(res);
+                // if (res.code == 1) {
+                //     layer.msg(res.msg, {time: 1000, icon: 1});
+                //     obj.del();
+                //     tableIn.reload();
+                // } else {
+                //     layer.msg(res.msg, {time: 1000, icon: 2});
+                // }
+            });
+            layer.confirm("确认删除本及子分类", {icon: 3, title:'Tip'},
+                function(index){
+                    $.post("{:url('delGrade')}", {id: obj.id,data:obj}, function (res) {
+                        console.log('res:');
+                        console.log(res);
+                        if (res.code == 1) {
+                            layer.msg(res.msg, {time: 1000, icon: 1});
+                            obj.del();
+                            tableIn.reload();
+                        } else {
+                            layer.msg(res.msg, {time: 1000, icon: 2});
+                        }
+                    });
+                    obj.del();
+                    layer.close(index);
+                },function (index) {
+                    layer.close(index);
+                }
+            );
+        }
+        var i=1000;
+        function add(pObj) {
+            console.log('add.pObj');
+            console.log(pObj);
+            var param={};
+            param.name='产品'+Math.random();
+            param.id=++i;
+            param.pId=pObj?pObj.id:0;
+            treeGrid.addRow(tableId,pObj?pObj.LAY_TABLE_INDEX+1:0,param);
+        }
+        function save(pObj) {
+            console.log('save.pObj');
+            console.log(pObj.id);
+            console.log(pObj);
+            data = pObj;
+            $.post("{:url('saveGradeValue')}", {id: data.id,data:data}, function (res) {
+                if (res.code == 1) {
+                    layer.msg(res.msg, {time: 1000, icon: 1});
+                    obj.del();
+                    tableIn.reload();
+                } else {
+                    layer.msg(res.msg, {time: 1000, icon: 2});
+                }
+            });
+            // layer.close(index);
+
+        }
+
+
+
+    });
+    var i=1000;
+    function add(pObj) {
+        console.log('add.pObj');
+        console.log(pObj);
+        var param={};
+        param.name='产品'+Math.random();
+        param.id=++i;
+        param.pId=pObj?pObj.id:0;
+        treeGrid.addRow(tableId,pObj?pObj.LAY_TABLE_INDEX+1:0,param);
+    }
+    function print() {
+        console.log(treeGrid.cache[tableId]);
+        var loadIndex=layer.msg("对象已打印，按F12，在控制台查看！", {
+            time:3000
+            ,offset: 'auto'//顶部
+            ,shade: 0
+        });
+    }
+
+
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>添加服务器 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>编辑网站</legend>
+            </fieldset>
+            <form class="layui-form layui-form-pane" lay-filter="formser">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">网站名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="webname" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">网址</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="domainname" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">测试网址</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="testing" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">所在服务器</label>
+                    <div class="layui-input-block">
+                        <select name="ip" lay-filter="ip" id="ser_list" lay-verify="required" >
+                            <option value="0">请选择所在服务器</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="remark" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">是否禁用</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" value="1" name="status" lay-text="开启|关闭" checked lay-skin="switch">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn" lay-submit="" lay-filter="submit">立即提交</button>
+                    </div>
+                </div>
+            </form>
+</body>
+<script>
+                var $form;
+                let i=1,j=1,k=1;
+                layui.use(['form', 'layer','upload','laydate','layedit'], function () {
+                    var form = layui.form, layer = layui.layer,$= layui.jquery,laydate=layui.laydate,upload = layui.upload;
+                    var layedit = layui.layedit;
+                    $ = layui.$;
+                    form.on('submit(submit)', function (data) {
+                        console.log('传输的数据');
+                        console.log(data.field);
+                        loading =layer.load(1, {shade: [0.1,'#fff']});
+                        $.post("", data.field, function (res) {
+                            layer.close(loading);
+                            if (res.code == "1") {
+                                layer.msg(res.msg, {time: 1800, icon: 1}, function () {
+                                     location.href = "{:url('weblist')}";
+                                });
+                            } else {
+                                layer.msg(res.msg, {time: 1800, icon: 2});
+                                location.href = "{:url('weblist')}";
+                            }
+                        });
+                    });
+
+                    form.val("formser",{
+                        "webname":"{$data.webname}",
+                        "domainname":"{$data.domainname}",
+                        "testing":"{$data.testing}",
+                        "ip":"{$data.ip}",
+                        "status":"{$data.status}",
+                        "remark":"{$data.remark}",
+                    })
+
+                    $(function () {
+                        $.post('{:url("getSerlist")}', function (result) {
+                            result = JSON.parse(result);
+                            var p = result.data;
+                            console.log(result);
+                            for (v in p) {
+                                var pp = p[v].area_code;
+                                $("#ser_list").append("<option value=" + p[v].id + ">" + p[v].ipname + "</option>")
+                            }
+                            form.render();
+
+
+                            $('select[name="ip"]').val([{$data.ip}]);
+                            form.render();
+                        })
+                    });
+
+
+
+
+                });
+
+            </script>
+<!--<script src="/guanli/static//guanli/js/script.js"></script>-->
+</html>

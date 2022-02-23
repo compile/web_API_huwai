@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+
+
+<form class="layui-form layui-form-pane" lay-filter="formser">
+
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>添加商品</legend>
+    </fieldset>
+
+    <form class="layui-form" lay-filter="goods_info_form">
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">商品</label>
+            <div class="layui-input-block">
+                <input type="text" name="title"   id="title"  lay-verify="title" autocomplete="off" placeholder="请输入商品名" class="layui-input">
+            </div>
+            <label class="layui-form-label">商品缩略图</label>
+            <div class="layui-input-block">
+                <input type="text" name="thumb" id="pic" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                <button type="button" class="layui-btn" id="uploadThumb">
+                    <i class="layui-icon">&#xe67c;</i>上传图标
+                </button>
+            </div>
+        </div>
+
+        <!--        <div class="layui-form-item">-->
+        <!--            <label class="layui-form-label">关键词</label>-->
+        <!--            <div class="layui-input-inline">-->
+        <!--                <input type="text" name="keyword" placeholder="" autocomplete="off" class="layui-input">-->
+        <!--            </div>-->
+        <!--        </div>-->
+
+<!--        多图-->
+        <div class="layui-form-item" id="pics">
+            <div class="layui-form-label">相册图集</div>
+            <div class="layui-input-block" style="width: 70%;">
+                <div class="layui-upload">
+                    <button type="button" class="layui-btn layui-btn-primary pull-left" id="slide-pc">选择多图</button>
+                    <div class="pic-more">
+                        <ul class="pic-more-upload-list" id="slide-pc-priview">
+                            {foreach $data.produce_image as $v}
+                            <li class="item_img"><div class="operate"><i class="toleft layui-icon"></i><i class="toright layui-icon"></i><i class="close layui-icon"></i></div><img src="{$v}" class="img"><input type="hidden" name="imglist[]" value="{$v}"></li>
+                            {/foreach}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item" style="text-align:center;">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">成本价</label>
+                <div class="layui-input-inline">
+                    <input type="number" min="0" name="cjb"  value="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" name="cbj" placeholder="" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">原价</label>
+                <div class="layui-input-inline">
+                    <input type="number" min="0" name="yj"   value="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" name="yj" placeholder="" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">售价</label>
+                <div class="layui-input-inline">
+                    <input type="number" min="0" name="price" value="0"  oninput="value=value.replace(/[^\d]/g,'')" required="required" name="sj" placeholder="" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">类别</label>
+                <div class="layui-input-inline" style="width: 200px">
+                    <select name="type_id" lay-filter="type_id" id="type_id" lay-verify="required" >
+                        <option value="0">选择分类</option>
+                    </select>
+
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">单位</label>
+                <div class="layui-input-inline" style="width: 200px">
+                    <select name="goods_unit" lay-filter="goods_unit" id="goods_unit" lay-verify="required" >
+                        <option value="0">选择单位</option>
+                    </select>
+
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">库存</label>
+                <div class="layui-input-inline">
+                    <input type="number" min="0" name="stock" id="stock"  value="{$data.stock}" oninput="value=value.replace(/[^\d]/g,'')"  name="stocks" required="required"  placeholder="" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">库存预警: </label>
+                <div class="layui-input-inline">
+                    当前库存量小于 <input type="number" min="0" oninput="value=value.replace(/[^\d]/g,'')" required="required" value="20" name="stock_forewarn"> 时，商品库存报警
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">多属性</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" id="attr_status"  name="attr_status" lay-text="开放|关闭" checked lay-skin="switch">
+                </div>
+            </div>
+            <input type="button" onclick="add()" value="编辑商品属性">
+            <ul>
+
+            </ul>
+
+            <div id="demo" class="demo">
+
+                {$attrstr|raw}
+
+
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">是否禁用</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" id="status"  name="status" lay-text="开放|关闭" checked lay-skin="switch">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <textarea id="content" name="content" style="display: none;"></textarea>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn" lay-submit="" lay-filter="submit">立即提交</button>
+                </div>
+            </div>
+    </form>
+</body>
+<script>
+    var $form;
+    let i=1,j=1,k=1;
+    layui.use(['form', 'layer','upload','laydate','layedit'], function () {
+        var form = layui.form, layer = layui.layer,$= layui.jquery,laydate=layui.laydate,upload = layui.upload;
+        var layedit = layui.layedit;
+        $ = layui.$;
+        layui.use('layedit', function(){
+            var layedit = layui.layedit;
+            layedit.set({
+                uploadImage: {
+                    url: '{:url("UpFiles/uploadEdit")}' //接口url
+                    ,type: '' //默认post
+                }
+            });
+            form.val("formser",{
+                "title":"{$data.title|raw}",
+                "status":{$data.status},
+            });
+            index = layedit.build('content'); //建立编辑器
+            layui.layedit.setContent(index,"{$data.content|raw}");
+        });
+        // 手动赋值
+        $('select[name="goodsAttr"]').val(['sing1', 'movie2']);
+        form.render();
+
+        form.on('select(multi)', function (data) {
+            console.log(data.elem); //得到select原始DOM对象
+            console.log(data.value); //得到被选中的值
+            console.log(data.othis); //得到美化后的DOM对象
+            console.log(data.current_value); //当前操作的值
+        })
+
+        var upload = layui.upload;
+        upload.render({
+            elem: '#slide-pc',
+            url: "{:url('uploadMore')}",
+            size: 500,
+            exts: 'jpg|png|jpeg',
+            multiple: true,
+            before: function(obj) {
+                layer.msg('图片上传中...', {
+                    icon: 16,
+                    shade: 0.01,
+                    time: 0
+                })
+            },
+            done: function(res) {
+                console.log(res);
+                res = JSON.parse(JSON.stringify(res));
+                layer.close(layer.msg());//关闭上传提示窗口
+                console.log(res.status);
+                if(res.status == 1) {
+                    return layer.msg(res.msg);
+                }
+                //$('#slide-pc-priview').append('<input type="hidden" name="pc_src[]" value="' + res.filepath + '" />');
+                $('#slide-pc-priview').append('<li class="item_img"><div class="operate"><i class="toleft layui-icon"></i><i class="toright layui-icon"></i><i  class="close layui-icon"></i></div><img src="' + res .url + '" class="img" ><input type="hidden" name="imglist[]" value="' + res.url + '" /></li>');
+            }
+        });
+
+        //点击多图上传的X,删除当前的图片
+        $("body").on("click",".close",function(){
+            $(this).closest("li").remove();
+            form.render();
+        });
+        //多图上传点击<>左右移动图片
+        $("body").on("click",".pic-more ul li .toleft",function(){
+            var li_index=$(this).closest("li").index();
+            if(li_index>=1){
+                $(this).closest("li").insertBefore($(this).closest("ul").find("li").eq(Number(li_index)-1));
+            }
+            form.render();
+        });
+        $("body").on("click",".pic-more ul li .toright",function(){
+            var li_index=$(this).closest("li").index();
+            $(this).closest("li").insertAfter($(this).closest("ul").find("li").eq(Number(li_index)+1));
+            form.render();
+        });
+
+        $.post('{:url("get_goodsCate2")}', function (result) {
+            result = JSON.parse(result);
+
+            temp = result;
+
+            // alert(JSON.stringify(temp));
+            for (v in temp) {
+                // alert(JSON.stringify(temp[v]['children']));
+                $("#type_id").append("<option disabled value=" + temp[v].name + ">----" + temp[v].name + "----</option>");
+                for(vv in temp[v]['children']){
+                    three2 = temp[v]['children'][vv]['three'];
+                    // alert(JSON.stringify(three2));
+                    for(vvv in three2){
+                        // alert(JSON.stringify(three2[vvv]))
+                        if(three2[vvv].id == '{$data.type_id}'){
+                            $("#type_id").append("<option selected='selected' value=" + three2[vvv].id + ">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + three2[vvv].name + "</option>");
+
+                        }else{
+                            $("#type_id").append("<option  value=" + three2[vvv].id + ">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + three2[vvv].name + "</option>");
+                        }
+                    }
+                    //      $("#type_id").append("<option value=" + temp['children'][vv].name + ">" + temp['children'][vv].name + "</option>")
+                    // $("#type_id").append("<option value=" + temp['children'][vv].name + ">" + temp['children'][vv].name + "</option>")
+                }
+
+
+            }
+
+
+
+            form.render();
+
+        });
+
+        $.post('{:url("getGoodsUnit")}', function (result) {
+            result = JSON.parse(result);
+            console.log(result);
+            temp = result['data'];
+            for (v in temp) {
+                $("#goods_unit").append("<option value=" + temp[v].name + ">" + temp[v].name + "</option>")
+            }
+            $('select[name="goods_unit"]').val("{$data.goods_unit}");
+            form.render();
+        })
+        init();
+
+        function combine(arr) {
+            arr.reverse();
+            var r = []; (function f(t, a, n) {
+                if (n == 0) return r.push(t);
+                for (var i = 0; i < a[n - 1].length; i++) {
+                    f(t.concat(a[n - 1][i]), a, n - 1)
+                }
+            })([], arr, arr.length);
+            return r
+        }
+
+
+        $.post('{:url("getAttribute")}', function (result) {
+            console.log('here');
+            result =  JSON.parse(result);
+            temp = result['attribute'];
+            for (v in temp) {
+                $("#goods_attr").append("<option value=" + temp[v].name + ">" + temp[v].name + "</option>")
+            }
+            // 手动赋值
+            $('select[name="goods_attr"]').val(['颜色']);
+            form.render();
+        })
+
+
+
+
+
+
+        form.on('submit(submit)', function (data) {
+            console.log(data.field);
+            var ccc = data.field;
+
+
+            // return;
+            /** 在服务器端组合数据
+             $.post('{:url("tttttt")}',data.field, function (result) {
+                    console.log(result);
+                })
+
+             **/
+
+
+            console.log(data.field.json);
+            data.field.content= layedit.getContent(index);
+            data.field.status = $("[id='status']:checked").val();
+            data.field.image = $("#pic").val();
+            if(!data.field.status){
+                data.field.status = 0;
+            }
+            console.log(data.field.status);
+            loading =layer.load(1, {shade: [0.1,'#fff']});
+
+            $.post("", data.field, function (res) {
+                console.log('提交');
+                layer.close(loading);
+                if (res.code == "1") {
+                    layer.msg(res.msg, {time: 1800, icon: 1}, function () {
+                        //  location.href = "{:url('sharelist')}";
+                    });
+                } else {
+                    layer.msg(res.msg, {time: 1800, icon: 1});
+                    // location.href = "{:url('sharelist')}";
+                }
+            });
+        });
+        //执行实例
+        var uploadInst = upload.render({
+            elem: '#uploadThumb' //绑定元素
+            ,url: "{:url('upload')}" //上传接口
+            ,accept: 'file'
+            ,field:'image'
+            ,before: function(obj){
+
+                layer.load(2); //上传loading
+
+            }
+            ,done: function(res){
+                console.log(res);
+                layer.closeAll('loading');
+                layui.use('layer', function(){
+                    var layer = layui.layer;
+                    $("#pic").val(res.url);
+                    $(".thumb").val(res.url);
+                    layer.msg(res.url, {
+                        time: 6000, //6s后自动关闭
+                        icon:1
+                    });
+                });
+            }
+            ,error: function(){
+                //请求异常回调
+            }
+        });
+
+
+        //执行实例
+        var uploadInst222 = upload.render({
+            elem: '#thumbUpload' //绑定元素
+            ,url: "{:url('upload')}" //上传接口
+            ,accept: 'file'
+            ,field:'image'
+            ,before: function(obj){
+
+                layer.load(2); //上传loading
+
+            }
+            ,done: function(res){
+                console.log($(this).html);
+                console.log(res);
+                layer.closeAll('loading');
+                layui.use('layer', function(){
+                    var layer = layui.layer;
+                    $("#pic").val(res.url);
+                    $(".thumb").val(res.url);
+                    layer.msg(res.url, {
+                        time: 6000, //6s后自动关闭
+                        icon:1
+                    });
+                });
+            }
+            ,error: function(){
+                //请求异常回调
+            }
+        });
+
+
+        form.val("formser",{
+            "title":"{$data.title}",
+            "thumb":"{$data.thumb}",
+            "price":"{$data.price}",
+            "type_id":"{$data.type_id}",
+            "cbj":"{$data.cbj}",
+            "yj":"{$data.yj}",
+            "sj":"{$data.sj}",
+            "attr_status":"{$data.attr_status}",
+
+        })
+
+
+
+
+
+
+    });
+
+
+    //初始4个选项
+    var num = 1;
+    //添加选项
+    function add() {
+        layer.open({
+            type : 2,
+            title: "编辑属性",
+            area: ["60%","90%"],
+            closeBtn: false,
+            shadeClose: true, //点击遮罩关闭
+            btn: ['取消', '关闭'] ,
+
+            btn2: function(){
+                layer.closeAll();
+            },
+            shade: 0,
+            content : "selectAttr.html",
+            success:function(layero,index){
+                var body = layer.getChildFrame('body', index);
+                body.contents().find("#cateId").val(data.catId);
+            }});
+        return ;
+
+
+        // alert(num)
+        //添加一行,num加一
+        num++;
+        //通过知道当前有的按钮数算出选项名
+        var str = String.fromCharCode(64 + num);
+        //编辑新选项的html代码
+        var $li = $("<li>" + "<span>" + str + ":</span> " + " <input type=\"checkbox\"/>22" + "  <input type=\"text\"  class=\"str\"/>" + "  <input type=\"button\"   class=\"del\" value=\"删除\"/></li>");
+        //将新的一行添加到<ul>中
+
+
+
+
+
+        var $parent = $("ul");
+        $parent.append($li);
+        //因为添加了新的选项需要重新绑定按钮
+        init();
+    }
+    function query() {
+        // alert(num)
+        var str = "";
+        var str1 = "";
+        //for循环查询已有控件的输入值
+        for (var i = 0; i < num; i++) {
+            var a = $("ul li:eq(" + i + ") :text").val();
+            var b = $("ul li:eq(" + i + ") :checkbox").is(':checked');
+            var j = i + 1;
+            str += "第" + j + "个文本框输入：" + a;
+            str1 += "第" + j + "个复选框选中：" + b;
+        }
+
+    }
+    function combine(arr) {
+        arr.reverse();
+        var r = []; (function f(t, a, n) {
+            if (n == 0) return r.push(t);
+            for (var i = 0; i < a[n - 1].length; i++) {
+                f(t.concat(a[n - 1][i]), a, n - 1)
+            }
+        })([], arr, arr.length);
+        return r
+    }
+    //分配产品
+    function ChooseAdidValues(v) {
+        // console.log('testing');
+        // console.log(v);
+        v = JSON.parse(v);
+        // console.log(v);
+
+        // console.log(v.goods_attr);
+        // console.log(v.goods_attr[0]);
+        arr = v.goods_attr;
+        // console.log(v['颜色']);
+        attrvv = [];
+        arr.forEach((item,index,array)=>{
+            // console.log('item:');
+            // console.log(item);
+            attrvv[index] = v[item];
+
+        })
+
+
+        console.log(attrvv);
+
+
+        // var arr = [['白色', '红色', '蓝色'], ['165CM', '170CM', '175CM']];
+        var arr = attrvv;
+        // console.log('nnnnnnnnnnnnarr:');
+        // console.log(arr);
+        var res = combine(arr);
+        // console.log(res);
+
+        var row = [];
+        var rowspan = res.length;
+        for (var n = arr.length - 1; n > -1; n--) {
+            row[n] = parseInt(rowspan / arr[n].length);
+            rowspan = row[n]
+        }
+        row.reverse();
+        var str = "";
+        var len = res[0].length;
+        console.log('len:'+len);
+        for (var i = 0; i < res.length; i++) {
+            // console.log('i:'+i);
+            // console.log('res[i]'+res[i]);
+            var tmp = "";
+            for (var j = 0; j < len; j++) {
+                // console.log('j:'+j);
+
+                if (i % row[j] == 0 && row[j] > 1) {
+                    tmp += "<td rowspan='" + row[j] + "'>"+res[i][j]+"</td>";
+
+
+                } else if (row[j] == 1) {
+                    tmp += "<td>"+ res[i][j] + "</td>";
+                }
+                // console.log(res[i][j]);
+
+            }
+            str += "<tr>" + tmp + "<td><input type='text' name='attrprice[]' value='10'></td><td><input type='text' class='stock' name='attrstock[]' value='3'><input type='text' name='attrthumb[]' class='thumb' alt='属性图' value='"+i+"' id='thumbID'"+i+"> <button type='button' class='layui-btn' id='thumbUpload'>\n" +
+                "<i class='layui-icon'>&#xe67c;</i>修改图片</button></td></td></tr>"
+        }
+        var th = "";
+        for (var k = 0; k < len; k++) {
+            th += "<th>" + k + "</th>"
+        }
+        th = "<thead>" + th + "<th>价格</th><th>库存</th><th>缩略图</th></thead>";
+        str = "<table>" + th + str + "</table>";
+        str = str +   "<input style='width:1000px;' type='text' name='json' value='"+JSON.stringify(res)+"'>";
+        document.getElementById('demo').innerHTML = str;
+    }
+    //绑定每个ul li下的删除按钮
+    function init() {
+
+        //这里其实用ul li input :button就可以，但是给按钮加一个class方便用css给按钮添加样式，这里本人比较懒没有添加样式。
+        $("ul li input.del").unbind("click").click(function() {
+            //$(this).parent().remove();链式操作，$(this)为该按钮本事,parent()为其父元素即<li>，调用renmove()将整个<li>节点删除
+            $(this).parent().remove();
+            //alert(num)
+            //for循环刷新列表，因为考试往往用ABC，所以利用ascii码通过获取当前控件的索引来转换成对应的英文字母,
+            for (var i = 0; i < num - 1; i++) {
+                //ascii码65对应的A,65加上当前索引值再转成字符即可
+                var str = String.fromCharCode(65 + i) + ":";
+                //定位到每个<li>下的<span>节点，将选项号刷新到页面
+                $("ul li:eq(" + i + ") span").html(str);
+            }
+            //删除一行，num减一
+            num--;
+        });
+    }
+
+    $(function(){
+        //输入框的值改变时触发
+        $("#stock").on("input",function(e){
+            //获取input输入的值
+            $(".stock").val(e.delegateTarget.value);
+            console.log(e.delegateTarget.value);
+        });
+    });
+
+</script>
+
+<style type="text/css">
+    *{padding:0;margin:0}.demo{padding:10px}.demo table{border-collapse:collapse}
+    .demo  table tr td{border:1px solid#ccc;padding:4px}
+    table{margin:auto;
+        text-align:center;}
+</style>
+
+<!--多图-->
+<style>
+    .layui-upload-img { width: 90px; height: 90px; margin: 0; }
+    .pic-more { width:100%; left; margin: 10px 0px 0px 0px;}
+    .pic-more li { width:90px; float: left; margin-right: 5px;}
+    .pic-more li .layui-input { display: initial; }
+    .pic-more li a { position: absolute; top: 0; display: block; }
+    .pic-more li a i { font-size: 24px; background-color: #008800; }
+    #slide-pc-priview .item_img img{ width: 90px; height: 90px;}
+    #slide-pc-priview li{position: relative;}
+    #slide-pc-priview li .operate{ color: #000; display: none;}
+    #slide-pc-priview li .toleft{ position: absolute;top: 40px; left: 1px; cursor:pointer;}
+    #slide-pc-priview li .toright{ position: absolute;top: 40px; right: 1px;cursor:pointer;}
+    #slide-pc-priview li .close{position: absolute;top: 5px; right: 5px;cursor:pointer;}
+    #slide-pc-priview li:hover .operate{ display: block;}
+</style>
+
+</body>
+
+</html>

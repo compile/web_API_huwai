@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+<div class="admin-main layui-anim layui-anim-upbit">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>更新配置文件</legend>
+    </fieldset>
+
+
+
+    <dd> <span style="color:green" id="setwechat">更新微信通知接收号</span>  <span> 根据用户列表填写的openid生成</span> </dd>
+    <hr>
+    <li>生成内容包含 通知相应的管理员。 设置了openid的就通知。</li>
+    <li>设置是优先使用email还是公众号通知</li>
+    <li>设置网站检测时间</li>
+    <li>挂载每分钟执行的脚本。 然后在里面在设置时间执行？</li>
+    <li>配置文件重新生成</li>
+
+
+
+</div>
+<script type="text/javascript">
+    layui.use(['table', 'form'], function () {
+        var table = layui.table, form = layui.form, $ = layui.jquery;
+        $('#setwechat').on('click', function (data) {
+            console.log('传输的数据');
+            console.log(data.field);
+            loading =layer.load(1, {shade: [0.1,'#fff']});
+            $.post("{:url('setchatalert')}", data.field, function (res) {
+                layer.close(loading);
+                console.log(res);
+                if (res.code == "1") {
+                    layer.msg(res.msg, {time: 1800, icon: 1}, function () {
+
+                    });
+                } else {
+                    layer.msg(res.msg, {time: 1800, icon: 1});
+
+                }
+            });
+        });
+        $('#unfreeze').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+    });
+</script>
+
+

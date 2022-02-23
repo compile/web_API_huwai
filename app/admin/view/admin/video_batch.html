@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+<div class="layui-upload">
+    <button type="button" class="layui-btn layui-btn-normal" id="fileList">选择多文件</button>
+    <div class="layui-upload-list">
+        <form class="layui-form">
+        <table class="layui-table">
+            <thead>
+            <th>文件名</th>
+            <th>大小</th>
+            <th>状态</th>
+            <th>操作</th>
+            <th>地址</th>
+            </thead>
+            <tbody id="demoList"></tbody>
+        </table>
+        </form>
+    </div>
+    <button type="button" class="layui-btn" id="fileListAction">开始上传重组排列，请按约定规则</button>
+
+</div>
+<script>
+    var suffix = new Array();//后缀
+    var filename = new Array();
+    var filepath = new Array();
+    var videoname = new Array();
+    var onepicarray =  Array();//视频
+    var twopicarray = Array();//图片
+    layui.use('upload', function(){
+
+        var $ = layui.jquery
+            ,upload = layui.upload;
+        //多文件列表示例
+        var demoListView = $('#demoList')
+            ,uploadListIns = upload.render({
+            elem: '#fileList'
+            ,url: "{:url('admin/Admin/upload')}" //改成您自己的上传接口
+            ,accept: 'file'
+            ,multiple: true
+            ,auto: false
+            ,bindAction: '#fileListAction'
+            ,choose: function(obj){
+                console.log(obj);
+                var files = this.files = obj.pushFile(); //将每次选择的文件追加到文件队列
+                console.log(files);
+                //读取本地文件
+                var nums = 1;
+                    obj.preview(function(index, file, result) {
+                        var tr = $(['<tr id="upload-' + index + '">', '<td><span style="color:yellowgreen;font-weight:bold;">['+nums+']&nbsp;&nbsp;</span><input type="text" name="filename" value="' + file.name + '"></td>', '<td><img src="' + result + '" alt="' + file.name + '" style="width: 100px;height: 40px;"></td>', '<td>' + (file.size / 1014).toFixed(1) + 'kb</td>', '<td>等待上传</td>', '<td>', '<button class="layui-btn layui-btn-xs demo-reload layui-hide">重传</button>', '<button class="layui-btn layui-btn-xs layui-btn-danger demo-delete">删除</button>', '</td>', '</tr>'].join(''));
+                        //单个重传
+                        tr.find('.demo-reload').on('click', function() {
+                            obj.upload(index, file);
+                            $("#upload-" + index).find("td").eq(2).html((file.size / 1014).toFixed(1) + 'kb');
+                        });
+
+                        //删除
+                        tr.find('.demo-delete').on('click', function() {
+                            delete files[index]; //删除对应的文件
+                            tr.remove();
+                            uploadListIns.config.elem.next()[0].value = ''; //清空 input file 值，以免删除后出现同名文件不可选
+                        });
+
+                        demoListView.append(tr);
+                        $(".num_pic").text("总共【" + demoListView.find("tr").length + "】张图片");
+                        nums++;
+                    });
+                }
+            ,done: function(res, index, upload){
+                if(res.status == 1) { //上传成功
+                    $("#cao").text("地址");
+                    var tr = demoListView.find('tr#upload-' + index),
+                        tds = tr.children();
+                    tds.eq(3).html('<span style="color: #5FB878;">上传成功</span>');
+                    tds.eq(4).html('<input type="text" class="filelist" name="imgs"  value="' + res.info + '" class="layui-input" />'); //清空操作
+                    return delete this.files[index]; //删除文件队列已经上传成功的文件
+                }
+                this.error(index, upload);
+            },allDone: function(obj,res) { //当文件全部被提交后，才触发
+                    layer.msg("上传文件数量：【" + obj.total + "】张，上传成功：【" + obj.successful + "】张，失败：【" + obj.aborted + "】", {
+                        time: 3000
+                    });
+                    // console.log(obj.total); //得到总文件数
+                    // console.log(obj.successful); //请求成功的文件数
+                    // console.log(obj.aborted); //请求失败的文件数
+                    // console.log(obj);
+                    // console.log(res);
+                $("input[name^='imgs']").each(function(i, el) {
+                    var  fileDir = $(this).val();
+                     suffix[i] = fileDir.substr(fileDir.lastIndexOf("."));
+
+                });
+                $("input[name^='filename']").each(function(i, el) {
+                    console.log($(this).val());
+                    filename[i]= $(this).val();
+                });
+
+                $("input[name^='imgs']").each(function(i, el) {
+                    console.log($(this).val());
+                    filepath[i]= $(this).val();
+                });
+
+
+                var suffixunique = $.unique(suffix);
+                var suffixcount = suffixunique.length; // 限定必须为2  如果不是2 则报错。
+                var videoarray = [".mp4", ".AVI", ".mov", ".rmvb", ".FLV", ".3GP"];
+                var picarray = [".bmp", ".jpg", ".png", ".tif", ".gif", ".pcx"];
+                var onearray =  Array();//视频
+                var twoarray = Array();//图片
+                $.each(filename,function(i,val) { //两个参数，第一个参数表示遍历的数组的下标，第二个参数表示下标对应的值
+                    suffix = val.substr(val.lastIndexOf("."));
+                    var index = $.inArray(suffix, videoarray);//这是视频的。 所以 指定一组为视频组
+                    if(index >= 0)//分组// 视频
+                    {
+                            onearray[i] = val;
+                    }else{
+                            twoarray[i] = val;
+                    }
+                });
+                onearray = $.grep(onearray, function(n) {return $.trim(n).length > 0;});//过滤空的
+                twoarray = $.grep(twoarray, function(n) {return $.trim(n).length > 0;});//过滤空的
+
+                // console.log('onelength'+ onearray.length);
+                $.each(onearray,function(i,val)
+                {
+                    strFileName = val.split('.');
+                    console.log('strFileName:'+strFileName[0]);
+                    videoname[i] = strFileName[0];
+
+                })
+
+
+
+
+
+                $.each(filepath,function(i,val) { //两个参数，第一个参数表示遍历的数组的下标，第二个参数表示下标对应的值
+                    suffix = val.substr(val.lastIndexOf("."));
+                    var index = $.inArray(suffix, videoarray);//这是视频的。 所以 指定一组为视频组
+                    if(index >= 0)//分组// 视频
+                    {
+                        onepicarray[i] = val;
+                    }else{
+                        twopicarray[i] = val;
+                    }
+                });
+                onepicarray = $.grep(onepicarray, function(n) {return $.trim(n).length > 0;});//过滤空的
+                twopicarray = $.grep(twopicarray, function(n) {return $.trim(n).length > 0;});//过滤空的
+
+                // console.log('filepath:'+filepath);//地址
+                // console.log('one:'+onearray);//视频
+                // console.log('two:'+twoarray);//图片
+                // console.log('videoname:'+videoname);//视频
+
+                // console.log('onepicarray:'+onepicarray);//地址
+                // console.log('twopicarray:'+twopicarray);//视频
+                // console.log('two:'+twoarray);//图片
+                // console.log('videoname:'+videoname);//视频
+
+
+                //分组ok。 然后组合
+                console.log('videoname:');
+                for (var i=0;i<videoname.length;i++)
+                {
+                    console.log(videoname[i]);
+
+                }
+                videoname =  videoname.sort();
+                twopicarray = twopicarray.sort();
+                onepicarray = onepicarray.sort();
+                //排序后元素一致
+
+                var form = $("<form action='http://localhost/admin/Admin/video_batch.html' method='post'>");
+
+
+                form.append("<table style='width:100%;'>");
+                form.append("<tr><th>名称</th><th>图片地址</th><th>视频地址</th><th>tag</th></tr>");
+
+                form.append("<tr><th><input type='text' id='titleleft' onchange='titlechange()' ></th><th><input type='text' id='titleright' name='titleright' value='' onchange='titlechange()'></th><th><input type='text' id='tagleft' name='tagleft' value='' onchange='tagchange()'></th><th> <input type='text' name='tagright' id='tagright' value=''  onchange='tagchange()'></th>")
+                for (var i=0;i<videoname.length;i++)
+                {
+                    form.append("<tr>");
+                    form.append("<td><input type='text' default='"+videoname[i]+"' id='title"+i+"' name='title[]' value='"+videoname[i]+"'></td>");// 名称
+                    form.append("<td><input type='text' name='img[]' value='"+twopicarray[i]+"'></td>");// 图片地址
+                    form.append("<td><input type='text' name='path[]' value='"+onepicarray[i]+"'></td>");// 地址
+                    form.append("<td><input type='text' default='"+videoname[i]+"'  id='tag"+i+"' name='tag[]' value='"+videoname[i]+"'></td>");// tag标签
+                    form.append("</tr>");
+                }
+                form.append("<input type=\"submit\" value=\"提交\">");
+                form.append("</table>");
+                form.append("</form>");
+                $(document.body).append(form);
+                //
+                }
+            ,error: function(index, upload){
+                console.log(upload);
+                var tr = demoListView.find('tr#upload-'+ index)
+                    ,tds = tr.children();
+                tds.eq(2).html('<span style="color: #FF5722;">上传失败</span>');
+                tds.eq(3).find('.demo-reload').removeClass('layui-hide'); //显示重传
+            }
+        });
+
+    });
+
+
+function titlechange(){
+    var titleleft = $("#titleleft").val();
+    var titleright = $("#titleright").val();
+    //得到每一个title的默认值。然后
+    for (var i=0;i<videoname.length;i++)
+    {
+        console.log('left');
+        var newtitle = $("#title"+i).attr("default");
+        console.log('newtitle:'+newtitle);
+        $("#title"+i).val(titleleft+newtitle+titleright);
+    }
+}
+function tagchange(){
+
+
+    var tagleft = $("#tagleft").val();
+    var tagright = $("#tagright").val();
+    //得到每一个title的默认值。然后
+    for (var i=0;i<videoname.length;i++)
+    {
+        console.log('left');
+        var newtitle = $("#tag"+i).attr("default");
+
+        $("#tag"+i).val(tagleft+newtitle+tagright);
+    }
+
+}
+</script>
+<style>
+    li{
+        line-height:25px;
+    }
+    input{height:25px;line-height:25px;padding:10px 0;}
+</style>
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

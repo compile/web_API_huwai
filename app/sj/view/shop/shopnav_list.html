@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+<div class="admin-main layui-anim layui-anim-upbit">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>导航管理列表</legend>
+    </fieldset>
+<!--    {include file="common/ser_search"/}
+    <div class="demoTable layui-form">
+        <table class="layui-table" lay-skin="line">
+            <colgroup>
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+            </colgroup>
+
+    </div>
+    -->
+    <table class="layui-table" id="list" lay-filter="list" lay-data="{id:'idTest',height: 'full-300'}"></table>
+</div>
+
+<script type="text/html" id="topBtn">
+    <a id="adAdd-btn" href="{:url('addShopNav')}" class="layui-btn">
+        新增导航
+    </a>
+</script>
+<script type="text/javascript">
+    /**13位时间戳转换成 年月日 上午 时间  2018-05-23 10:41:08 */
+    function createTime(v){
+        return new Date(parseInt(v)).toLocaleString()
+    }
+    /**重写toLocaleString方法*/
+    Date.prototype.toLocaleString = function() {
+        var y = this.getFullYear();
+        var m = this.getMonth()+1;
+        m = m<10?'0'+m:m;
+        var d = this.getDate();
+        d = d<10?("0"+d):d;
+        var h = this.getHours();
+        h = h<10?("0"+h):h;
+        var M = this.getMinutes();
+        M = M<10?("0"+M):M;
+        var S=this.getSeconds();
+        S=S<10?("0"+S):S;
+        return y+"-"+m+"-"+d+" "+h+":"+M+":"+S;
+    };
+</script>
+<script>
+    layui.use(['table', 'form'], function () {
+        var table = layui.table, form = layui.form, $ = layui.jquery;
+        var tableIn = table.render({
+            elem: '#list',
+            url: '{:url("shopnavList")}',
+            method: 'post',
+            toolbar: '#topBtn',
+            page: true,
+            limit: 30,
+            title: '',
+            cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                , {field: 'name', title: '名称', align: 'center'}
+                , {field: 'path',title: '地址', align: 'center', width: '10%'}
+                , {field: 'thumb', title: '缩略图', align: 'center', width: '10%'}
+                , {
+                    field: 'status', title: '状态', align: 'center', templet: function (res) {
+                        if (res.status == '1') {
+                            return '<span style="color:green;">显示</span>';
+                        } else {
+                            return '<span style="color:#FF5722;font-weight:bold;">隐藏</span>';
+                        }
+                    }
+                }
+                // ,{field: 'create_time',title: '创建时间', width: '15%',templet:function(d){return createTime(d.create_time)}}
+                // ,{field: 'update_time',title: '更新时间', width: '15%',templet:function(d){return createTime(d.update_time)}}
+                , {
+                    field: 'do', title: '操作', align: 'center', templet: function (res) {
+                        if (res.status == '1') {
+                            return '<a href="{:url("addShopNav")}?id='+ res.id + '" class="layui-btn layui-btn-xs">编辑</a>\n' +
+                                '<a  class="layui-btn layui-btn-xs " lay-event="setShowFail">隐藏</a>';
+                        } else {
+                            return '<a href="{:url("addShopNav")}?id='+ res.id + '" class="layui-btn layui-btn-xs">编辑</a>\n' +
+                                ' <a  class="layui-btn layui-btn-xs " lay-event="setShowTrue">显示</a>   <a class="layui-btn layui-btn-xs layui-btn-danger" title="删除" lay-event="Delete">删除</a>';
+                        }
+                    }
+                }
+
+            ]]
+        });
+        $('#freeze').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+        $('#unfreeze').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        $('#export-btn').on('click',function () {
+            var recommend_id= $('#recommend_id').val();
+            var phone= $('#phone').val();
+            var name= $('#name').val();
+            var status= $('#status').val();
+            var reservation= $('#reservation').val();
+        });
+        $('#search').on('click', function () {
+            tableIn.reload({
+                page: 1,
+                where: {
+                    recommend_id: $('#recommend_id').val(),
+                    phone: $('#phone').val(),
+                    name: $('#name').val(),
+                    status: $('#status').val(),
+                    reservation: $('#reservation').val(),
+                }
+            });
+        });
+        table.on('tool(list)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'del') {
+                layer.confirm('{:lang("Are you sure you want to delete it")}', function (index) {
+                    $.post("{:url('addelete')}", {id: data.id}, function (res) {
+                        if (res.code == 1) {
+                            layer.msg(res.msg, {time: 1000, icon: 1});
+                            obj.del();
+                            tableIn.reload();
+                        } else {
+                            layer.msg(res.msg, {time: 1000, icon: 2});
+                        }
+                    });
+                    layer.close(index);
+                });
+            }
+            if (obj.event === 'setShowFail') {
+                layer.confirm('{:lang("Are you sure you xiajia")}', function (index) {
+                    $.post("{:url('modifyState')}", {id: data['id'],type:'status',att:'nav'}, function (res) {
+                        if (res.code == 1) {
+                            layer.msg(res.msg, {time: 1000, icon: 1});
+                            obj.del();
+                            tableIn.reload();
+                        } else {
+                            layer.msg(res.msg, {time: 1000, icon: 2});
+                        }
+                    });
+                    layer.close(index);
+                });
+            }
+
+            if (obj.event === 'setShowTrue') {
+                layer.confirm('{:lang("Are you sure you shangjia")}', function (index) {
+                    $.post("{:url('modifyState')}", {id: data['id'],type:'status',att:'nav'}, function (res) {
+                        if (res.code == 1) {
+                            layer.msg(res.msg, {time: 1000, icon: 1});
+                            obj.del();
+                            tableIn.reload();
+                        } else {
+                            layer.msg(res.msg, {time: 1000, icon: 2});
+                        }
+                    });
+                    layer.close(index);
+                });
+            }
+        });
+        var active = {
+            getCheckData: function () {
+                //获取选中数据
+                var checkStatus = layui.table.checkStatus('list')
+                    , data = checkStatus.data;
+                //冻结操作
+                $.post("{:url('freeze')}", {data: data, type: 1}, function (res) {
+                    if (res.code == 1) {
+                        layer.msg(res.msg, {time: 1000, icon: 1});
+                        location.href = res.url;
+                        //tableIn.reload();
+                    } else {
+                        layer.msg(res.msg, {time: 1000, icon: 2});
+                    }
+                });
+            }
+            , unFreezeData: function () {
+                //获取选中数据
+                var checkStatus = layui.table.checkStatus('list')
+                    , data = checkStatus.data;
+                //冻结操作
+                $.post("{:url('freeze')}", {data: data, type: 2}, function (res) {
+                    if (res.code == 1) {
+                        layer.msg(res.msg, {time: 1000, icon: 1});
+                        location.href = res.url;
+                        //tableIn.reload();
+                    } else {
+                        layer.msg(res.msg, {time: 1000, icon: 2});
+                    }
+                });
+            }
+        }
+
+
+        //转换函数
+        function createTime(now){
+            var date=new Date(parseInt(now)* 1000);
+            var year=date.getFullYear();
+            var mon = date.getMonth()+1;
+            var day = date.getDate();
+            var hours = date.getHours();
+            var minu = date.getMinutes();
+            var sec = date.getSeconds();
+            return year+'/'+mon+'/'+day+' '+hours+':'+minu+':'+sec;
+        }
+
+    });
+</script>
+<style>
+
+    /*.layui-table-cell{*/
+    /*    height:100px;*/
+    /*    line-height: 100px;*/
+    /*}*/
+</style>
+

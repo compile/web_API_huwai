@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+</head>
+<body>
+<div class="admin-main layui-anim layui-anim-upbit">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>流量图表</legend>
+    </fieldset>
+    {include file="common/speed_search"/}
+    <div id="chart_img" style="width: 100%;height:400px;"></div>
+    <div style="float:left;">
+        {foreach name="system" id="vo"}
+            {$vo.key}:
+            {$vo.item}<br>
+        {/foreach}
+    </div>
+</div>
+<div id="main" style="width: 600px;height:400px;"></div>
+<script type="text/javascript">
+</script>
+
+<script type="text/javascript">
+
+    /**13位时间戳转换成 年月日 上午 时间  2018-05-23 10:41:08 */
+    function createTime(v){
+        return new Date(parseInt(v)).toLocaleString()
+    }
+    /**重写toLocaleString方法*/
+    Date.prototype.toLocaleString = function() {
+        var y = this.getFullYear();
+        var m = this.getMonth()+1;
+        m = m<10?'0'+m:m;
+        var d = this.getDate();
+        d = d<10?("0"+d):d;
+        var h = this.getHours();
+        h = h<10?("0"+h):h;
+        var M = this.getMinutes();
+        M = M<10?("0"+M):M;
+        var S=this.getSeconds();
+        S=S<10?("0"+S):S;
+        return y+"-"+m+"-"+d+" "+h+":"+M+":"+S;
+    };
+</script>
+<script type="text/html" id="publicpath">
+    {{#  if(d.info == 'publish'){ }}
+    <a href='{{d.path}}' target='_blank'>查看</a>
+    {{# }else { }}
+    还没发布
+    {{# } }}
+</script>
+<script>
+    $.post('{:url("getnetfornet")}',{'ip':'{$ip}','card':'{$cardname}','num':'{$num}'},function(data){
+        console.log(data);
+        var myChart = echarts.init(document.getElementById('chart_img'));
+        option = {
+            title: {
+                text: '{$ip} {$cardname} 流量监控图',//图片标题
+            },
+            legend:{
+                icon:'rect',//标记图标，方形
+            },
+            tooltip: { //focus显示内容
+                trigger: 'axis',
+                formatter: function (params) {
+                    var tmpparams = params[1];
+                    params = params[0];
+                    if(tmpparams)
+                    {
+                        return params.value[0] + '</br>'+params.seriesName+':' + params.value[1] + "kb/s"+'</br>'+tmpparams.seriesName+':' + tmpparams.value[1] + "kb/s";
+                    }
+                    return params.value[0] + '</br>'+params.seriesName+':' + params.value[1] + "kb/s";
+                },
+                axisPointer: {
+                    animation: false
+                },
+            },
+            xAxis: { //x轴,类型为日期格式，故在数据中添加了一个24小时的数组，以调整x坐标系显示数据
+                name:'时间',
+                nameGap:30,
+                nameTextStyle:{
+                    padding:[15,0,0,0],
+                    fontSize:14,
+                },
+                type: 'time',
+                maxInterval: 3600*2*1000,
+                // min:data.time[0][0],
+                // max:data.time[1][0],
+                splitLine: { //显示分割线
+                    show: false
+                },
+            },
+            yAxis: { //y轴，添加留白策略数据变多时y轴突然拉的比较长
+                name:'bits per second(kb/s)',
+                nameLocation:'center',
+                nameGap:30,
+                type: 'value',
+                min:0,
+                // boundaryGap: [0, '30%'],//坐标轴两边留白策略
+                splitLine: {
+                    show: false
+                }
+            },
+            dataZoom: [	//局部显示插件
+                {
+                    start: 80,                               //数据窗口范围的起始百分比,表示%
+                    end: 100,
+                    type: 'slider',                          //slider表示有滑动块的，inside表示内置的
+                    backgroundColor:"rgb(252,252,252)",
+                    fillerColor:"rgba(167,183,204,0.5)",     //选中范围的填充颜色。
+                    showDataShadow: false,	 //是否显示数据阴影
+                    orient:"horizontal",     //缺省情况控制横向数轴还是纵向数轴。'horizontal'：水平|x'vertical'：竖直|y。
+                    height:20,
+                    bottom:5,
+                },{
+                    type: 'slider',
+                    orient:"vertical",
+                    showDataShadow: false,
+                    width:20,
+                }
+            ],
+            series: [{	//数据
+                name: '入口网速',
+                type: 'line',
+                step:true, //是否支持骤变，false有段数据为空时为渐变
+                showSymbol: false,
+                hoverAnimation: false,
+                data: data.in_speed,
+                areaStyle: {},
+                lineStyle:{
+                    opacity:0,
+                },
+                itemStyle:{
+                    color:'rgb(0,204,0)',
+                },
+
+            },
+                {
+                    name: '出口网速',
+                    type: 'line',
+                    showSymbol: false,
+                    hoverAnimation: false,
+                    data: data.out_speed,
+                    lineStyle:{
+                        opacity:0.7,
+                        color:'rgb(0,0,225)'
+                    },
+                    itemStyle:{
+                        opacity:0.7,
+                        color:'rgb(0,0,225)',
+                    }
+                },
+                {
+                    type: 'line',
+                    tooltip:{trigger:'none'},
+                    data:data.time,//数据格式[[2019-07-04 15:20:12,-1],[2019-07-05 15:20:12,-1]]
+                }]
+        };
+        myChart.setOption(option);
+    },"json");
+    layui.use(['table', 'form'], function () {
+        var table = layui.table, form = layui.form, $ = layui.jquery;
+
+        let from = layui.from;
+        form.on('select(ip)', function(data){
+            // console.log(data.elem); //得到baiselect原始DOM对象
+            console.log(data.value); //得到被选中的值
+            // console.log(data.othis); //得到美化后的DOM对象
+
+
+            var url = '?ip='+data.value;
+            $(window).attr('location',url);
+            //这里du可以写你选中后要执行的函数zhi
+
+
+        });
+
+
+        $('#search').on('click', function () {
+            var card = $("select[name='card']").val();
+           console.log('ip:'+ip+';card:'+card);
+            $.post('{:url("getnetfornet")}',{'ip':{$ip},'card':card,'num':'{$num}'},function(data){
+                                console.log(data);
+                                var myChart = echarts.init(document.getElementById('chart_img'));
+                                option = {
+                                    title: {
+                                        text: ip+" "+card + '流量监控图',//图片标题
+                                    },
+                                    legend:{
+                                        icon:'rect',//标记图标，方形
+                                    },
+                                    tooltip: { //focus显示内容
+                                        trigger: 'axis',
+                                        formatter: function (params) {
+                                            var tmpparams = params[1];
+                                            params = params[0];
+                                            if(tmpparams)
+                                            {
+                                                return params.value[0] + '</br>'+params.seriesName+':' + params.value[1] + "kb/s"+'</br>'+tmpparams.seriesName+':' + tmpparams.value[1] + "kb/s";
+                                            }
+                            return params.value[0] + '</br>'+params.seriesName+':' + params.value[1] + "kb/s";
+                        },
+                        axisPointer: {
+                            animation: false
+                        },
+                    },
+                    xAxis: { //x轴,类型为日期格式，故在数据中添加了一个24小时的数组，以调整x坐标系显示数据
+                        name:'时间',
+                        nameGap:30,
+                        nameTextStyle:{
+                            padding:[15,0,0,0],
+                            fontSize:14,
+                        },
+                        type: 'time',
+                        maxInterval: 3600*2*1000,
+                        // min:data.time[0][0],
+                        // max:data.time[1][0],
+                        splitLine: { //显示分割线
+                            show: false
+                        },
+                    },
+                    yAxis: { //y轴，添加留白策略数据变多时y轴突然拉的比较长
+                        name:'bits per second(kb/s)',
+                        nameLocation:'center',
+                        nameGap:30,
+                        type: 'value',
+                        min:0,
+                        // boundaryGap: [0, '30%'],//坐标轴两边留白策略
+                        splitLine: {
+                            show: false
+                        }
+                    },
+                    dataZoom: [	//局部显示插件
+                        {
+                            start: 80,                               //数据窗口范围的起始百分比,表示%
+                            end: 100,
+                            type: 'slider',                          //slider表示有滑动块的，inside表示内置的
+                            backgroundColor:"rgb(252,252,252)",
+                            fillerColor:"rgba(167,183,204,0.5)",     //选中范围的填充颜色。
+                            showDataShadow: false,	 //是否显示数据阴影
+                            orient:"horizontal",     //缺省情况控制横向数轴还是纵向数轴。'horizontal'：水平|x'vertical'：竖直|y。
+                            height:20,
+                            bottom:5,
+                        },{
+                            type: 'slider',
+                            orient:"vertical",
+                            showDataShadow: false,
+                            width:20,
+                        }
+                    ],
+                    series: [{	//数据
+                        name: '入口网速',
+                        type: 'line',
+                        step:true, //是否支持骤变，false有段数据为空时为渐变
+                        showSymbol: false,
+                        hoverAnimation: false,
+                        data: data.in_speed,
+                        areaStyle: {},
+                        lineStyle:{
+                            opacity:0,
+                        },
+                        itemStyle:{
+                            color:'rgb(0,204,0)',
+                        },
+
+                    },
+                        {
+                            name: '出口网速',
+                            type: 'line',
+                            showSymbol: false,
+                            hoverAnimation: false,
+                            data: data.out_speed,
+                            lineStyle:{
+                                opacity:0.7,
+                                color:'rgb(0,0,225)'
+                            },
+                            itemStyle:{
+                                opacity:0.7,
+                                color:'rgb(0,0,225)',
+                            }
+                        },
+                        {
+                            type: 'line',
+                            tooltip:{trigger:'none'},
+                            data:data.time,//数据格式[[2019-07-04 15:20:12,-1],[2019-07-05 15:20:12,-1]]
+                        }]
+                };
+                myChart.setOption(option);
+            },"json");
+
+        });
+
+        //转换函数
+        function createTime(now){
+            var date=new Date(parseInt(now)* 1000);
+            var year=date.getFullYear();
+            var mon = date.getMonth()+1;
+            var day = date.getDate();
+            var hours = date.getHours();
+            var minu = date.getMinutes();
+            var sec = date.getSeconds();
+            return year+'/'+mon+'/'+day+' '+hours+':'+minu+':'+sec;
+        }
+
+
+
+        $(function () {
+            $.post('{:url("getTypeName")}', function (result) {
+                result = JSON.parse(result);
+                var p = result.data;
+                console.log(result);
+                for (v in p) {
+                    var pp = p[v].defaultvalue;
+                    console.log(pp);
+                    $("#typename").append("<option value=" + p[v].defaultvalue + ">" + p[v].defaultvalue + "</option>")
+                }
+                form.render();
+            })
+
+            $.post('{:url("getSerlist")}', function (result) {
+                result = JSON.parse(result);
+                var p = result.data;
+                console.log('getSerlist');
+                console.log(result);
+                for (v in p) {
+                    var pp = p[v].ipremark;
+                    $("#ip").append("<option value=" + p[v].ip_remark + ">" + p[v].ipname + "</option>")
+                }
+                form.render();
+            })
+        });
+
+    });
+</script>
+

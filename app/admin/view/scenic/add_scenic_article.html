@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+
+
+<form class="layui-form layui-form-pane" lay-filter="formser">
+    <div class="layui-form-item">
+        <label class="layui-form-label">标题</label>
+        <div class="layui-input-block">
+            <input type="text" name="title" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">景点</label>
+        <div class="layui-input-block">
+            <select name="topic_id" lay-filter="topic_id" id="topic_id" lay-verify="required" >
+                <option value="0">请选择分类</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="layui-form-item" id="pics" class="noshow   class">
+        <div class="layui-form-label">相册图集</div>
+        <div class="layui-input-block" style="width: 70%;">
+            <div class="layui-upload">
+                <button type="button" class="layui-btn layui-btn-primary pull-left" id="slide-pc">选择多图</button>
+                <div class="pic-more">
+                    <ul class="pic-more-upload-list" id="slide-pc-priview">
+                        {foreach $data.produce_image as $v}
+                        <li class="item_img"><div class="operate"><i class="toleft layui-icon"></i><i class="toright layui-icon"></i><i class="close layui-icon"></i></div><img src="{$v}" class="img"><input type="hidden" name="imglist[]" value="{$v}"></li>
+                        {/foreach}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item" id="shipin" class="noshow    class">
+        <label class="layui-form-label">视频</label>
+        <input type="hidden" name="video" id="video"  placeholder="" autocomplete="off" class="layui-input">
+        <button type="button" class="layui-btn" id="video-pc" style="position:relative;"> <video id="previewVideo" src="" controls="controls"  title="视频" style="position:fixed;right:0px;top:156px;max-width:100px;">
+            您的浏览器不支持 video 标签。
+        </video>
+            <i class="layui-icon">&#xe67c;</i>上传视频
+        </button>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label required">内容形式</label>
+        <div class="layui-input-block">
+            <input type="radio" name="is_type" lay-filter="is_type" value="0" id="is_type0" title="图文形式" checked="">
+            <input type="radio" name="is_type" lay-filter="is_type" value="1" id="is_type1" title="视频形式 ">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否禁用</label>
+        <div class="layui-input-block">
+            <input type="checkbox" id="status"  name="status" lay-text="开放|关闭" checked lay-skin="switch">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <textarea id="content" name="content" style="display: none;"></textarea>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn" lay-submit="" lay-filter="submit">立即提交</button>
+        </div>
+    </div>
+</form>
+</body>
+<script>
+
+    layui.use(['form', 'layer','upload','laydate','layedit'], function () {
+        var form = layui.form, layer = layui.layer,$= layui.jquery,laydate=layui.laydate,upload = layui.upload;
+        var layedit = layui.layedit;
+        $ = layui.$;
+        layui.use('layedit', function(){
+            var layedit = layui.layedit;
+            layedit.set({
+                uploadImage: {
+                    url: '{:url("UpFiles/uploadEdit")}' //接口url
+                    ,type: '' //默认post
+                }
+            });
+            form.val("formser",{
+                "title":"{$data.title|raw}",
+                "status":{$data.status},
+            });
+            index = layedit.build('content'); //建立编辑器
+            layui.layedit.setContent(index,"{$data.content|raw}");
+
+
+
+
+            // 是否包邮
+            form.on('radio(is_type)', function(data){
+
+                console.log(data);
+                var is_type = data.value;
+
+                if(is_type == 1){
+                    // 计价方式
+                    // $("#slide-pc").attr("disabled","disabled");
+                    $("#pics").addClass("noshow");
+                    $("#shipin").removeClass("noshow")
+
+                    //$("input[name='price_way']").attr("disabled","disabled");
+                    //$("input[name='price_way']").next().addClass('layui-radio-disbaled layui-disabled');
+
+                    // 运送方式
+                    $("input[name='shipping_way[]']").attr("disabled","disabled");
+                    $("input[name='shipping_way[]']").next().addClass('layui-radio-disbaled layui-disabled');
+                }
+
+                if(is_type == 0){
+                    $("#shipin").addClass("noshow");
+
+                    $("#pics").removeClass("noshow")
+                    // $("#slide-pc").removeAttr("disabled");
+                    // 计价方式
+                    //$("input[name='price_way']").removeAttr("disabled");
+                    //$("input[name='price_way']").next().removeClass('layui-radio-disbaled layui-disabled');
+
+                    // 运送方式
+                    //$("input[name='shipping_way[]']").removeAttr("disabled","disabled");
+                    //$("input[name='shipping_way[]']").next().removeClass('layui-radio-disbaled layui-disabled');
+                }
+
+            });
+        });
+
+        var upload = layui.upload;
+        upload.render({
+            elem: '#slide-pc',
+            url: "{:url('uploadMore')}",
+            size: 50000,
+            exts: 'jpg|png|jpeg|mp4',
+            multiple: true,
+            before: function(obj) {
+                layer.msg('图片上传中...', {
+                    icon: 16,
+                    shade: 0.01,
+                    time: 0
+                })
+            },
+            done: function(res) {
+                console.log(res);
+                res = JSON.parse(JSON.stringify(res));
+                layer.close(layer.msg());//关闭上传提示窗口
+                console.log(res.status);
+                if(res.status == 1) {
+                    return layer.msg(res.msg);
+                }
+                //$('#slide-pc-priview').append('<input type="hidden" name="pc_src[]" value="' + res.filepath + '" />');
+                $('#slide-pc-priview').append('<li class="item_img"><div class="operate"><i class="toleft layui-icon"></i><i class="toright layui-icon"></i><i  class="close layui-icon"></i></div><img src="' + res .url + '" class="img" ><input type="hidden" name="imglist[]" value="' + res.url + '" /></li>');
+            }
+        });
+
+
+
+        var upload = layui.upload;
+        upload.render({
+            elem: '#video-pc',
+            url: "{:url('uploadMore')}",
+            size: 50000,
+            exts: 'jpg|png|jpeg|mp4',
+            multiple: true,
+            before: function(obj) {
+                layer.msg('视频上传中...', {
+                    icon: 16,
+                    shade: 0.01,
+                    time: 0
+                })
+            },
+            done: function(res) {
+                console.log(res);
+                res = JSON.parse(JSON.stringify(res));
+                layer.close(layer.msg());//关闭上传提示窗口
+                console.log(res.status);
+                if(res.status == 1) {
+                    return layer.msg(res.msg);
+                }
+
+                $("#video").val(res.url);
+                $(".video").val(res.url);
+
+                $("#previewVideo").attr("src",res.url);
+            }
+        });
+
+        //点击多图上传的X,删除当前的图片
+        $("body").on("click",".close",function(){
+            $(this).closest("li").remove();
+            form.render();
+        });
+        //多图上传点击<>左右移动图片
+        $("body").on("click",".pic-more ul li .toleft",function(){
+            var li_index=$(this).closest("li").index();
+            if(li_index>=1){
+                $(this).closest("li").insertBefore($(this).closest("ul").find("li").eq(Number(li_index)-1));
+            }
+            form.render();
+        });
+
+        $.post('{:url("getscenic")}', function (result) {
+            result = JSON.parse(result);
+            console.log(result);
+            temp = result['data'];
+            for (v in temp) {
+                $("#topic_id").append("<option value=" + temp[v].id + ">" + temp[v].topic_name + "</option>")
+            }
+            $('select[name="topic_id"]').val("{$data.topic_id}");
+            form.render();
+        })
+
+        form.on('submit(submit)', function (data) {
+            console.log(data);
+            data.field.content= layedit.getContent(index);
+            data.field.type = $("[id='type']:checked").val();
+            data.field.status = $("[id='status']:checked").val();
+            if(!data.field.status){
+                data.field.status = 0;
+            }
+            console.log(data.field.status);
+            loading =layer.load(1, {shade: [0.1,'#fff']});
+            $.post("", data.field, function (res) {
+                console.log(res);
+                console.log(data.field);
+                layer.close(loading);
+                if (res.code == "1") {
+                    layer.msg(res.msg, {time: 1800, icon: 1}, function () {
+                        //  location.href = "{:url('sharelist')}";
+                    });
+                } else {
+                    layer.msg(res.msg, {time: 1800, icon: 1});
+                    // location.href = "{:url('sharelist')}";
+                }
+            });
+        });
+    });
+
+</script>
+<!--多图-->
+<style>
+    .layui-upload-img { width: 90px; height: 90px; margin: 0; }
+    .pic-more { width:100%; left; margin: 10px 0px 0px 0px;}
+    .pic-more li { width:90px; float: left; margin-right: 5px;}
+    .pic-more li .layui-input { display: initial; }
+    .pic-more li a { position: absolute; top: 0; display: block; }
+    .pic-more li a i { font-size: 24px; background-color: #008800; }
+    #slide-pc-priview .item_img img{ width: 90px; height: 90px;}
+    #slide-pc-priview li{position: relative;}
+    #slide-pc-priview li .operate{ color: #000; display: none;}
+    #slide-pc-priview li .toleft{ position: absolute;top: 40px; left: 1px; cursor:pointer;}
+    #slide-pc-priview li .toright{ position: absolute;top: 40px; right: 1px;cursor:pointer;}
+    #slide-pc-priview li .close{position: absolute;top: 5px; right: 5px;cursor:pointer;}
+    #slide-pc-priview li:hover .operate{ display: block;}
+
+
+    .noshow{display:none}
+</style>

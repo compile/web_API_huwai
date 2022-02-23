@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+<div class="admin-main layui-anim layui-anim-upbit">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>iftop回显</legend>
+    </fieldset>
+    {include file="common/iftop_search"/}
+    <div class="demoTable layui-form">
+        <table class="layui-table" lay-skin="line">
+            <colgroup>
+                <col width="150">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+            </colgroup>
+            article_index.html  getdisk.html       nav_index.html       speedlist.html        video_batch.html
+            db_backup.html      getsysinfo.html    opera_log.html       sysmd5list.html       video_index.html
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# vi showiftop.html
+            You have new mail in /var/spool/mail/root
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# vi showiftop.html
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# vi showiftop.html
+            You have new mail in /var/spool/mail/root
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# vi showiftop.html
+            You have new mail in /var/spool/mail/root
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# vi showiftop.html
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# vi showiftop.html
+            You have new mail in /var/spool/mail/root
+            [root@iZ2ze1quxhnlk7b7iulcohZ admin]# cat showiftop.html
+            <!DOCTYPE html>
+            <html>
+
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+                <title>后台首页 - BBFREE</title>
+                <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+                <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+                <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+                <script src="/admin/static/common/layui/layui.js"></script>
+                <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+                <script src="/admin/static/common/vue.min.js"></script>
+            </head>
+            <body>
+            <div class="admin-main layui-anim layui-anim-upbit">
+                <fieldset class="layui-elem-field layui-field-title">
+                    <legend>iftop回显</legend>
+                </fieldset>
+                {include file="common/diff_search"/}
+                <div class="demoTable layui-form">
+                    <table class="layui-table" lay-skin="line">
+                        <colgroup>
+                            <col width="150">
+                            <col width="250">
+                            <col width="250">
+                            <col width="250">
+                            <col width="250">
+                            <col width="250">
+                            <col width="250">
+                            <col width="250">
+                        </colgroup>
+
+                </div>
+                <pre>
+     <div id="iftop"> <center>远程获取，稍等片刻</center></div>
+     </pre>
+            </div>
+            <script type="text/javascript">
+
+                /**13位时间戳转换成 年月日 上午 时间  2018-05-23 10:41:08 */
+                function createTime(v){
+                    return new Date(parseInt(v)).toLocaleString()
+                }
+                /**重写toLocaleString方法*/
+                Date.prototype.toLocaleString = function() {
+                    var y = this.getFullYear();
+                    var m = this.getMonth()+1;
+                    m = m<10?'0'+m:m;
+                    var d = this.getDate();
+                    d = d<10?("0"+d):d;
+                    var h = this.getHours();
+                    h = h<10?("0"+h):h;
+                    var M = this.getMinutes();
+                    M = M<10?("0"+M):M;
+                    var S=this.getSeconds();
+                    S=S<10?("0"+S):S;
+                    return y+"-"+m+"-"+d+" "+h+":"+M+":"+S;
+                };
+            </script>
+            <script>
+                layui.use(['table', 'form'], function () {
+                    var table = layui.table, form = layui.form, $ = layui.jquery;
+
+                    $("#search").on('click', function () {
+                        var ip = $("select[name='ip_remark']").val();
+                        console.log(ip);
+                        //跳转到地址
+                        $(window).attr('location','?ip='+ip);
+                    });
+
+
+
+                    //转换函数
+                    function createTime(now){
+                        var date=new Date(parseInt(now)* 1000);
+                        var year=date.getFullYear();
+                        var mon = date.getMonth()+1;
+                        var day = date.getDate();
+                        var hours = date.getHours();
+                        var minu = date.getMinutes();
+                        var sec = date.getSeconds();
+                        return year+'/'+mon+'/'+day+' '+hours+':'+minu+':'+sec;
+                    }
+
+
+                    $(function () {
+
+                        $.post('{:url("getSerlist")}', function (result) {
+                            result = JSON.parse(result);
+                            var p = result.data;
+                            for (v in p) {
+                                if(p[v].ip == {$ip}){
+                                    $("#ip").append("<option selected='selected' value=" + p[v].ip + ">" + p[v].ip + "</option>")
+                                }else {
+                                    $("#ip").append("<option value=" + p[v].ip + ">" + p[v].ip + "</option>")
+                                }
+                            }
+                            form.render();
+                        })
+
+
+
+                        function iftop(){
+                            $.post('{:url("iftopone")}?ip={$ip}', function (result) {
+                                //console.log(result);
+                                result = JSON.parse(result);
+                                console.log(result);
+                                $("#iftop").html(result)
+                                // form.render();
+                            })
+
+                        }
+                        setInterval(iftop,10);
+                    });
+
+                });
+            </script>
+            <style>
+                pre{
+                    background:#000;
+                    color:#fff;
+                    padding:10px;
+                    margin:auto;
+                }
+            </style>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+<div class="admin-main layui-anim layui-anim-upbit">
+    <fieldset class="layui-elem-field layui-field-title">
+        <legend>服务器状态日志记录</legend>
+    </fieldset>
+
+    {include file="common/ser_search"/}
+    <div class="demoTable layui-form">
+        <table class="layui-table" lay-skin="line">
+            <colgroup>
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+                <col width="250">
+            </colgroup>
+
+    </div>
+    <table class="layui-table" id="list" lay-filter="list" lay-data="{id:'idTest',height: 'full-300'}"></table>
+</div>
+
+<script type="text/html" id="barDemo">
+    <a href="{:url('PictureAds/adEdit')}?id={{d.id}}" class="layui-btn layui-btn-xs">{:lang('edit')}</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">{:lang('del')}</a>
+</script>
+
+<script type="text/html" id="topBtn">
+
+</script>
+<script type="text/javascript">
+
+    /**13位时间戳转换成 年月日 上午 时间  2018-05-23 10:41:08 */
+    function createTime(v){
+        return new Date(parseInt(v)).toLocaleString()
+    }
+    /**重写toLocaleString方法*/
+    Date.prototype.toLocaleString = function() {
+        var y = this.getFullYear();
+        var m = this.getMonth()+1;
+        m = m<10?'0'+m:m;
+        var d = this.getDate();
+        d = d<10?("0"+d):d;
+        var h = this.getHours();
+        h = h<10?("0"+h):h;
+        var M = this.getMinutes();
+        M = M<10?("0"+M):M;
+        var S=this.getSeconds();
+        S=S<10?("0"+S):S;
+        return y+"-"+m+"-"+d+" "+h+":"+M+":"+S;
+    };
+</script>
+<script type="text/html" id="publicpath">
+    {{#  if(d.info == 'publish'){ }}
+    <a href='{{d.path}}' target='_blank'>查看</a>
+    {{# }else { }}
+    还没发布
+    {{# } }}
+</script>
+<script>
+    layui.use(['table', 'form'], function () {
+        var table = layui.table, form = layui.form, $ = layui.jquery;
+        var tableIn = table.render({
+            elem: '#list',
+            url: '{:url("serlog")}',
+            method: 'post',
+            toolbar: '#topBtn',
+            page: true,
+            limit: 10,
+            title: '',
+            cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                , {field: 'id', title: 'id', align: 'center', width: '5%'}
+                , {field: 'ip', title: '服务器ip', align: 'center', width: '10%'}
+                , {field: 'typename', height : '3000px',title: '类型', align: 'center', width: '10%'}
+                , {field: 'content', title: '具体内容', align: 'center', width: '22%'}
+                , {field: 'remark', title: '备注', align: 'center', width: '10%'}
+                , {
+                    field: 'status', title: '状态', align: 'center', width: '10%', templet: function (res) {
+                        if (res.status == '1') {
+                            return '<span style="color:green;">启动</span>';
+                        } else {
+                            return '<span style="color:#FF5722;font-weight:bold;">非启动</span>';
+                        }
+                    }
+                }
+                ,{field: 'create_time',title: '记录时间', width: '15%',templet:function(d){return createTime(d.create_time)}}
+                , {
+                    field: 'do', title: '操作', align: 'center', width: '15%', templet: function (res) {
+                        if (res.status == '1') {
+                            return '<a href="'+ res.id + '" class="layui-btn layui-btn-xs">详情</a>\n' +
+                                '    <a  class="layui-btn layui-btn-xs" lay-event="setShowSuccess">处理</a>\n' +
+                                '    <a  class="layui-btn layui-btn-xs" lay-event="setShowFail">审核不通过</a>';
+                        } else {
+                            return '<a href="'+ res.id + '" class="layui-btn layui-btn-xs">详情</a>\n' +
+                                '    <a  class="layui-btn layui-btn-xs" lay-event="setShowSuccess">审核</a>\n' +
+                                '    <a class="layui-btn layui-btn-xs layui-btn-danger" title="删除" lay-event="Delete">警告请尽快处理</a>';
+                        }
+                    }
+                }
+
+            ]]
+        });
+        $('#freeze').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+        $('#unfreeze').on('click', function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        $('#export-btn').on('click',function () {
+            var recommend_id= $('#recommend_id').val();
+            var phone= $('#phone').val();
+            var name= $('#name').val();
+            var status= $('#status').val();
+            var reservation= $('#reservation').val();
+        });
+        $("#search").on('click', function () {
+            var ip = $("select[name='ip']").val();
+            var typename = $("select[name='typename']").val();
+            var start_time = $("input[name='start_time']").val();
+            var end_time = $("input[name='end_time']").val();
+            console.log('ip:'+ip+'typename:'+typename+'start_time:'+start_time+'end_time'+end_time);
+            tableIn.reload({
+                page: {page: 1},
+                where: {
+                    ip:ip,
+                    typename: typename,
+                    start_time:start_time,
+                    end_time:end_time,
+                }
+            });
+        });
+
+        table.on('tool(list)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'del') {
+                layer.confirm('{:lang("Are you sure you want to delete it")}', function (index) {
+                    $.post("{:url('addelete')}", {id: data.id}, function (res) {
+                        if (res.code == 1) {
+                            layer.msg(res.msg, {time: 1000, icon: 1});
+                            obj.del();
+                            tableIn.reload();
+                        } else {
+                            layer.msg(res.msg, {time: 1000, icon: 2});
+                        }
+                    });
+                    layer.close(index);
+                });
+            }
+        });
+        var active = {
+            getCheckData: function () {
+                //获取选中数据
+                var checkStatus = layui.table.checkStatus('list')
+                    , data = checkStatus.data;
+                //冻结操作
+                $.post("{:url('freeze')}", {data: data, type: 1}, function (res) {
+                    if (res.code == 1) {
+                        layer.msg(res.msg, {time: 1000, icon: 1});
+                        location.href = res.url;
+                        //tableIn.reload();
+                    } else {
+                        layer.msg(res.msg, {time: 1000, icon: 2});
+                    }
+                });
+            }
+            , unFreezeData: function () {
+                //获取选中数据
+                var checkStatus = layui.table.checkStatus('list')
+                    , data = checkStatus.data;
+                //冻结操作
+                $.post("{:url('freeze')}", {data: data, type: 2}, function (res) {
+                    if (res.code == 1) {
+                        layer.msg(res.msg, {time: 1000, icon: 1});
+                        location.href = res.url;
+                        //tableIn.reload();
+                    } else {
+                        layer.msg(res.msg, {time: 1000, icon: 2});
+                    }
+                });
+            },
+        }
+
+
+        //转换函数
+        function createTime(now){
+            var date=new Date(parseInt(now)* 1000);
+            var year=date.getFullYear();
+            var mon = date.getMonth()+1;
+            var day = date.getDate();
+            var hours = date.getHours();
+            var minu = date.getMinutes();
+            var sec = date.getSeconds();
+            return year+'/'+mon+'/'+day+' '+hours+':'+minu+':'+sec;
+        }
+
+
+        $(function () {
+            $.post('{:url("getTypeName")}', function (result) {
+                result = JSON.parse(result);
+                var p = result.data;
+                console.log(result);
+                for (v in p) {
+                    var pp = p[v].defaultvalue;
+                    console.log(pp);
+                    $("#typename").append("<option value=" + p[v].defaultvalue + ">" + p[v].defaultvalue + "</option>")
+                }
+                form.render();
+            })
+
+
+            $.post('{:url("getSerlist")}', function (result) {
+                result = JSON.parse(result);
+                var p = result.data;
+                console.log('getSerlist');
+                console.log(result);
+                for (v in p) {
+                    var pp = p[v].ipremark;
+                    $("#ip").append("<option value=" + p[v].ip_remark + ">" + p[v].ipname + "</option>")
+                }
+                form.render();
+            })
+        });
+
+    });
+</script>
+<style>
+
+    /*.layui-table-cell{*/
+    /*    height:100px;*/
+    /*    line-height: 100px;*/
+    /*}*/
+</style>
+

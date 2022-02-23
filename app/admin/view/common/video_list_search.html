@@ -1,0 +1,49 @@
+<div class="demoTable layui-form">
+    <table class="layui-table" lay-skin="line">
+        <colgroup>
+            <col width="190">
+            <col width="250">
+            <col width="250">
+            <col width="170">
+            <col width="20">
+            <col width="250">
+        </colgroup>
+        <tbody>
+        <tr>
+            <td>单词:</td>
+            <td>
+                <td><input type="text" name="title" placeholder="" class="layui-input"></td>
+            </td>
+            <td>文章id:</td>
+            <td>
+            <td><input type="text" name="article_id" placeholder="" class="layui-input"></td>
+            </td>
+            <td>状态</td>
+            <td>
+                <select name="msg">
+                    <option value="">请选择</option>
+                    <option value="publish">公开</option>
+                    <option value="no_publish">非公开</option>
+                    <option value="draft">草稿中</option>
+                    <option value="anslyze">审核中</option>
+                    <option value="audit">审核中</option>
+                    <option value="pre_publish">定时发布</option>
+                    <option value="rejected">审核未通过</option>
+                    <option value="forbidden">已下线</option>
+                    <option value="withdraw">已撤回</option>
+                    <option value="deleted">已删除</option>
+                    <option value="videodownload">视频下载中</option>
+                    <option value="videofail">视频下载失败</option>
+                    <option value="audiodownload">音频下载中</option>
+                    <option value="audiofail">音频下载失败</option>
+                    <option value="imagefail">图片下载失败</option>
+                </select>
+            </td>
+            <td>
+                <button class="layui-btn layuiadmin-btn-list" lay-submit lay-filter="search" id="search">搜索</button>
+            </td>
+
+        </tr>
+        </tbody>
+    </table>
+</div>

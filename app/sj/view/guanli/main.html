@@ -1,0 +1,81 @@
+
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>后台首页 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+
+<blockquote class="layui-elem-quote">
+<!--    <h2>BBFREE 轻量级后台模板</h2>-->
+<!--    <p>基于layui框架与Vue.js构建</p>-->
+<!--    <p>轻量不复杂 简洁不简单</p>-->
+</blockquote>
+
+<div class="layui-row">
+<!--    <div class="layui-col-md4">-->
+<!--        <div class="layui-card">-->
+<!--            <div class="layui-card-header"><h2>支持我们</h2></div>-->
+<!--            <div class="layui-card-body" style="height: 250px;">-->
+<!--                <ul>-->
+<!--                    <li>如果您认为BBFREE对你有所帮助,你可以扫描以上二维码支持我们</li>-->
+<!--                    <li>您的支持,将会出现在我们官网展现</li>-->
+<!--                    <li><img height="180" src="static/guanli/img/pay.png" /></li>-->
+<!--                </ul>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+    <div class="layui-col-md4">
+        <div class="layui-card">
+            <div class="layui-card-header"><h2>BBFREE 介绍</h2></div>
+            <div class="layui-card-body" style="height: 250px;">
+                <ul>
+                    <li>当前版本: v1.0</li>
+                    <li>地址:{$config.url}</li>
+                    <li>根目录地址:{$config.document_root}</li>
+                    <li>server_os:{$config.document_root}</li>
+                    <li>server_ip:{$config.server_ip}</li>
+                    <li>server_soft:{$config.server_soft}</li>
+                    <li>php_version:{$config.php_version}</li>
+                    <li>mysql_version:{$config.mysql_version}</li>
+                    <li>max_upload_size:{$config.max_upload_size}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-col-md4">
+
+        <div class="layui-card">
+            <div class="layui-card-header"><h2>功能</h2></div>
+            <div class="layui-card-body" style="height: 250px;">
+                <ul>
+                    <li>1.服务器集群状态检测记录</li>
+                    <li>2.网站检测记录</li>
+                    <li>3.文件更改状态检测记录</li>
+                    <li>4.服务器信息整理</li>
+                    <li>5.网站备注整理</li>
+                    <li>6.多管理员功能</li>
+                    <li>7.一站式配置统一</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<script src="/admin/static//admin/js/config.js"></script>
+<script src="/admin/static//admin/js/script.js"></script>
+</body>
+</html>

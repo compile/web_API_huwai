@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>layui-select-multiple</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="/layui2/css/layui.css" media="all"/>
+    <style>
+        /* 下拉多选样式 需要引用*/
+        select[multiple]+.layui-form-select dd{ padding:0;}
+        select[multiple]+.layui-form-select .layui-form-checkbox[lay-skin=primary]{ margin:0 !important; display:block; line-height:36px !important; position:relative; padding-left:26px;}
+        select[multiple]+.layui-form-select .layui-form-checkbox[lay-skin=primary] span{line-height:36px !important; float:none;}
+        select[multiple]+.layui-form-select .layui-form-checkbox[lay-skin=primary] i{ position:absolute; left:10px; top:0; margin-top:9px;}
+        .multiSelect{ line-height:normal; height:auto; padding:4px 10px; overflow:hidden;min-height:38px; margin-top:-38px; left:0; z-index:99;position:relative;background:none;}
+        .multiSelect a{ padding:2px 5px; background:#908e8e; border-radius:2px; color:#fff; display:block; line-height:20px; height:20px; margin:2px 5px 2px 0; float:left;}
+        .multiSelect a span{ float:left;}
+        .multiSelect a i{ float:left; display:block; margin:2px 0 0 2px; border-radius:2px; width:8px; height:8px; background:url(/close.png) no-repeat center; background-size:65%; padding:4px;}
+        .multiSelect a i:hover{ background-color:#545556;}
+
+        /* 下面是页面内样式，无需引用 */
+        .layui-block {
+            margin-bottom: 10px;
+        }
+
+        .layui-form-label {
+            width: 180px;
+        }
+        .code {
+            color: gray;
+            margin-left: 10px;
+        }
+        .unshow>#result {
+            display: none;
+        }
+        pre { padding: 5px; margin: 5px; }
+        .string { color: green; }
+        .number { color: darkorange; }
+        .boolean { color: blue; }
+        .null { color: magenta; }
+        .key { color: red; }
+    </style>
+</head>
+<body class="childrenBody" style="padding: 10px">
+<div class="layui-row">
+    <div class="layui-col-lg12 layui-col-md12">
+        <fieldset class="layui-elem-field  ">
+            <legend>属性选择</legend>
+            <form class="layui-form"  lay-filter="layui-form">
+                <div class="layui-block">
+                    <label class="layui-form-label">属性生成器</label>
+                    <div class="layui-input-inline">
+                        <select name="goods_attr" id="goods_attr" lay-filter="goods_attr" multiple lay-search>
+                            <option value="">请选择属性</option>
+
+                        </select>
+                    </div>
+                </div>
+
+                <div id="attrlist">
+
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <a class="layui-btn" lay-submit="" lay-filter="*">生成属性表</a>
+                    </div>
+                </div>
+            </form>
+
+</div>
+<div class="unshow">
+    <pre id="result">
+
+    </pre>
+</div>
+<script type="text/javascript" src="/layui2/layui.js"></script>
+<script>
+    layui.use(['form','code'], function () {
+        var form = layui.form,
+            $ = layui.$;
+
+        form.on('select(goods_attr)',function(data){
+
+            $("#attrlist").html('');
+
+
+            temp2 = JSON.parse(JSON.stringify(data.value));
+
+            temp2.map(function(value,index,array){
+                console.log('value:::'+value);
+                $.post('{:url("getAttribute2")}?key='+value, function (result) {
+                    console.log('value:::'+value);
+                    result =  JSON.parse(result);
+                    temp = result['attribute'];
+                    $("#attrlist").append('<select name="'+value+'" id="'+value+'" lay-filter="'+value+'" multiple lay-search><option value="">请选择属性</option>');
+                    console.log(temp.length);
+                    for (v in temp) {
+                        if(v <= temp.length){
+                            console.log('v:'+v);
+                            $("#"+value).append("<option value=" + temp[v].attr + ">" + temp[v].attr + "</option>")
+                        }
+                    }
+                    // 手动赋值
+                    form.render();
+                })
+                form.render();
+            })
+        })
+
+        form.on("submit(*)", function (data) {
+            // alert(JSON.stringify(data));
+            $('#result').html(syntaxHighlight(data.field));
+            layer.open({
+                type: 1,
+                title: '提交信息',
+                shadeClose: true,
+                content:$('#result')
+            });
+
+            parent.ChooseAdidValues(JSON.stringify(data.field));
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+            return false;
+        });
+
+        $.post('{:url("getAttribute")}', function (result) {
+            console.log('here');
+            console.log(result);
+            result =  JSON.parse(result);
+            temp = result['attribute'];
+            for (v in temp) {
+                if(v < temp.length) {
+                    $("#goods_attr").append("<option attr_id=" + temp[v].id + " value=" + temp[v].attr + ">" + temp[v].attr + "</option>")
+                }
+            }
+            // 手动赋值
+            $('select[name="goods_attr"]').val(['颜色','鞋码']);
+            form.render();
+        })
+
+
+
+        function test(){
+            var data = form.val('layui-form');
+            alert(JSON.stringify(data));
+        }
+
+        // json 格式化+高亮
+        function syntaxHighlight(json) {
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+                var cls = 'number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                    } else {
+                        cls = 'string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+
+    })
+</script>
+</body>
+</html>

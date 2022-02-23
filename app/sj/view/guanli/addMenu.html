@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>添加菜单 - BBFREE</title>
+    <link rel="stylesheet" href="/admin/static/common/layui/css/layui.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style.css">
+    <link rel="stylesheet" href="/admin/static//admin/css/style-iframe.css">
+    <script src="/admin/static/common/layui/layui.js"></script>
+    <script src="/admin/static/common/jquery-3.3.1.min.js"></script>
+    <script src="/admin/static/common/vue.min.js"></script>
+</head>
+<body>
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>编辑网站</legend>
+            </fieldset>
+            <form class="layui-form layui-form-pane" lay-filter="formser">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">一级分类</label>
+                    <div class="layui-input-block">
+                        <select name="pid" lay-filter="pid" id="pid" lay-verify="required" >
+                            <option value="0">顶栏目</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">标题名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="name" required lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">icon图标</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="icon"  placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">网址</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="url"  placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">是否隐藏</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="hidden"   placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-input-block"> true or false .一级目录才填写</div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">是否禁用</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" value="1" name="status" lay-text="开启|关闭" checked lay-skin="switch">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="ord"  placeholder="" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn" lay-submit="" lay-filter="submit">立即提交</button>
+                    </div>
+                </div>
+            </form>
+</body>
+<script>
+                var $form;
+                let i=1,j=1,k=1;
+                layui.use(['form', 'layer','upload','laydate','layedit'], function () {
+                    var form = layui.form, layer = layui.layer,$= layui.jquery,laydate=layui.laydate,upload = layui.upload;
+                    var layedit = layui.layedit;
+                    $ = layui.$;
+                    form.on('submit(submit)', function (data) {
+                        console.log('传输的数据');
+                        console.log(data.field);
+                        loading =layer.load(1, {shade: [0.1,'#fff']});
+                        $.post("", data.field, function (res) {
+                            layer.close(loading);
+                            if (res.code == "1") {
+                                layer.msg(res.msg, {time: 1800, icon: 1}, function () {
+                                     location.href = "{:url('memulist')}";
+                                });
+                            } else {
+                                layer.msg(res.msg, {time: 1800, icon: 2});
+                                location.href = "{:url('memulist')}";
+                            }
+                        });
+                    });
+
+                    form.val("formser",{
+                        "name":"{$data.name}",
+                        "pid":"{$data.pid}",
+                        "icon":"{$data.icon}",
+                        "url":"{$data.url}",
+                        "hidden":"{$data.hidden}",
+                        "status":"{$data.status}",
+                    })
+
+                    $(function () {
+                        $.post('{:url("getPid")}', function (result) {
+                            result = JSON.parse(result);
+                            var p = result.data;
+                            console.log(result);
+                            for (v in p) {
+                                var pp = p[v].area_code;
+                                $("#pid").append("<option value=" + p[v].id + ">" + p[v].name + "</option>")
+                            }
+                            form.render();
+                            $('select[name="pid"]').val('{$data.pid}');
+                             form.render();
+                        })
+                    });
+
+
+
+
+                });
+
+            </script>
+<!--<script src="/guanli/static//guanli/js/script.js"></script>-->
+</html>

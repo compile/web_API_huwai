@@ -1,0 +1,760 @@
+<link href="./H-ui.min.css" rel="stylesheet" type="text/css" />
+<link href="./style.css" rel="stylesheet" type="text/css" />
+<script>
+    var _upload_url = "index.php?module=system&action=UploadImg";
+</script>
+<script>
+    var group_url = "index.php?module=software&action=group&m=list_group";
+</script>
+<script src="./jquery.min(1).js"></script>
+<script src="./jquery.nicescroll.min.js"></script>
+<script src="./common.js"></script>
+<script src="./vue.min.js"></script>
+<script src="./bootstrap.min.js"></script>
+<script src="./plupload.full.min.js"></script>
+<script src="./jquery.datetimepicker.full.min.js"></script>
+<script src="./common.v2.js"></script>
+<script src="./clipboard.js"></script>
+<script>
+    //添加分组
+    $(document).on("click", ".add-group", function () {
+        var group = {
+            name: "未命名",
+            is_default: 0,
+        };
+        saveGroup(group);
+    });
+
+    $(document).on("click", ".picker-district", function () {
+        $.districtPicker({
+            success: function (res) {
+                $("#province_id").val(res.province_id);
+                $("#city_id").val(res.city_id);
+                $("#district_id").val(res.district_id);
+                $(".district-text").val(
+                    res.province_name + "-" + res.city_name + "-" + res.district_name
+                );
+            },
+            error: function (e) {
+                console.log(e);
+            },
+        });
+    });
+
+    //保存单个分组信息
+    function saveGroup(group) {
+        $.ajax({
+            url: group_img,
+            dataType: "json",
+            type: "post",
+            data: {
+                m: "save_group",
+                data: JSON.stringify(group),
+            },
+            success: function (res) {
+                if (res.code == 0) {
+                    file_app.group_list = res.data;
+                } else {
+                    // $.myAlert({
+                    //     content:res.smg
+                    // });
+                    layer.msg(res.msg, {
+                        time: 2000,
+                    });
+                }
+            },
+        });
+    }
+
+    //选择分组
+    $(document).on("click", ".selected-group", function (event) {
+        var text_name = $(this).find(".upload_more").text();
+
+        $(this)
+            .children(".upload_list")
+            .find(".upload_more")
+            .addClass("upload_mask");
+        $(this)
+            .siblings(".selected-group")
+            .find(".upload_more")
+            .removeClass("upload_mask");
+
+        if (text_name == "全部") {
+            $(this)
+                .siblings(".selected-group")
+                .find(".upload_setting")
+                .css("display", "none");
+        } else {
+            $(this)
+                .children(".upload_list")
+                .find(".upload_setting")
+                .css("display", "block");
+            $(this)
+                .siblings(".selected-group")
+                .find(".upload_setting")
+                .css("display", "none");
+        }
+
+        file_app.selected = $(this).data("index");
+        $("input[name='checkbox']").prop("checked", false);
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        getGroupFile();
+    });
+
+    //打开设置
+    $(document).on("click", ".setting-group", function (event) {
+        var index = $(this).data("index");
+        file_app.edit_group = -1;
+        file_app.selected = index;
+        if (file_app.edit_setting == index) {
+            file_app.edit_setting = -1;
+        } else {
+            file_app.edit_setting = index;
+        }
+        //getGroupFile();
+        event.stopPropagation();
+    });
+
+    //编辑分组
+    $(document).on("click", ".edit-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        var index = $(this).data("index");
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        file_app.edit_group = index;
+    });
+
+    //删除分组
+    $(document).on("click", ".delete-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        var index = $(this).data("index");
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        file_app.selected = 0;
+        var group = file_app.group_list[index];
+        if (group.id) {
+            group.is_delete = "1";
+        } else {
+            file_app.group_list.splice(index, 1);
+        }
+        saveGroup(group);
+    });
+
+    //确定修改
+    $(document).on("click", ".save-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        var group = file_app.group_list[file_app.edit_group];
+        group.name = $(".name-group").val();
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        saveGroup(group);
+    });
+
+    //取消修改
+    $(document).on("click", ".cancel-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+    });
+
+    //阻止冒泡事件
+    $(document).on("click", ".name-group", function (event) {
+        event.stopPropagation(); //阻止事件冒泡；
+    });
+
+    //保存
+    $(document).on("click", ".save-group-list", function () {
+        if (file_app.file_list.length > 0) {
+            var item = file_app.file_list[0];
+
+            if (typeof _file_select.success === "function") {
+                _file_select.success({
+                    name: item.file_url,
+                    url: item.file_url,
+                });
+            }
+        }
+
+        file_app.file_list = [];
+        file_app.list = [];
+        file_app.selected = 0;
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        $("#file_select_modal").modal("hide");
+    });
+
+    //取消
+    $(document).on("click", ".cancel-group-list", function () {
+        file_app.file_list = [];
+        file_app.list = [];
+        file_app.selected = 0;
+        file_app.edit_group = -1;
+        file_app.edit_setting = -1;
+        $("#file_select_modal").modal("hide");
+    });
+
+    //全选图片
+    $(document).on("change", "input[name='checkbox']", function () {
+        var list = file_app.list;
+        file_app.file_list = [];
+        $(list).each(function (i) {
+            if ($("input[name='checkbox']:checked").val() == 1) {
+                list[i].selected = 1;
+                var file = list[i];
+                file_app.file_list.push(file);
+            } else {
+                list[i].selected = 0;
+            }
+        });
+        addFile();
+    });
+
+    //选择图片
+    $(document).on("click", "#file_select_modal .file-item", function () {
+        var index = $(this).data("index");
+        file_app.file_list = [];
+        if (file_app.list[index].selected == 1) {
+            file_app.list[index].selected = 0;
+        } else {
+            file_app.list[index].selected = 1;
+        }
+        $("input[name='checkbox']").prop("checked", false);
+        addFile();
+    });
+
+    //选中的图片
+    function addFile() {
+        var list = file_app.list;
+        file_app.file_list = [];
+        $(list).each(function (i) {
+            if (list[i].selected == 1) {
+                var file = list[i];
+                file_app.file_list.push(file);
+            }
+        });
+    }
+
+    //删除选中的图片
+    $(document).on("click", ".delete-file-group", function () {
+        var file_list = file_app.file_list;
+        if (file_list.length == 0) {
+            // $.myAlert({
+            // 	content: '请先勾选需要删除的图片'
+            // });
+            layer.msg("请先勾选需要删除的图片", {
+                time: 2000,
+            });
+            return false;
+        }
+        $.ajax({
+            url: group_img,
+            dataType: "json",
+            type: "post",
+            data: {
+                m: "delete",
+                data: JSON.stringify(file_list),
+            },
+            success: function (res) {
+                if (res.code == 0) {
+                    var list = file_app.list;
+                    var new_list = [];
+                    $(list).each(function (i) {
+                        if (list[i].selected != 1) {
+                            new_list.push(list[i]);
+                        }
+                    });
+                    file_app.list = new_list;
+                    file_app.file_list = [];
+                    $("input[name='checkbox']").prop("checked", false);
+                    // $.myAlert({
+                    // 	content: '删除成功'
+                    // });
+                    layer.msg("删除成功", {
+                        time: 2000,
+                    });
+                } else {
+                    // $.myAlert({
+                    // 	content: res.msg
+                    // });
+                    layer.msg(res.msg, {
+                        time: 2000,
+                    });
+                }
+            },
+        });
+    });
+
+    //移动图片到某个分组
+    $(document).on("click", ".batch-group", function () {
+        var file_list = file_app.file_list;
+        var index = $(this).data("index");
+        if (file_list.length == 0) {
+            layer.msg("请先勾选需要删除的图片", {
+                time: 2000,
+            });
+            return false;
+        }
+        $.ajax({
+            url: group_img,
+            dataType: "json",
+            type: "post",
+            data: {
+                m: "move",
+                data: JSON.stringify(file_list),
+                group_id: file_app.group_list[index].id,
+            },
+            success: function (res) {
+                if (res.code == 0) {
+                    file_app.file_list = [];
+                    $("input[name='checkbox']").prop("checked", false);
+                    file_app.selected = index;
+                    getGroupFile();
+                    // $.myAlert({
+                    // 	content: '移动成功'
+                    // });
+                    layer.msg("移动成功", {
+                        time: 2000,
+                    });
+                } else {
+                    // $.myAlert({
+                    // 	content: res.msg
+                    // });
+                    layer.msg(res.msg, {
+                        time: 2000,
+                    });
+                }
+            },
+        });
+    });
+
+    //获得分组下的图片
+    function getGroupFile() {
+        var more_btn = $("#file_select_modal .file-more");
+        var loading_block = $("#file_select_modal .file-loading");
+        var group_id = file_app.group_list[file_app.selected].id;
+        if (group_id < 1) {
+            group_id = "";
+        }
+        // var group_id = 1;
+        console.log(group_id);
+        loading_block.show();
+        more_btn.hide();
+        $.ajax({
+            url: _upload_file_list_url,
+            data: {
+                dataType: "json",
+                type: "image",
+                page: 1,
+                group_id: group_id,
+            },
+            success: function (res) {
+                more_btn.attr("data-page", 2);
+                loading_block.hide();
+                more_btn.show();
+                file_app.list = res.data.list;
+            },
+        });
+    }
+
+    //上传图片
+    $(document).on("click", ".upload-group .upload-file-group", function () {
+        //分组ID
+        var group_id = file_app.group_list[file_app.selected].id;
+        if (group_id <= 0) {
+            group_id = 0;
+        }
+        var btn = $(this);
+        var group = btn.parents(".upload-group");
+        var input = group.find(".file-input");
+        var preview = group.find(".upload-preview");
+        var preview_img = group.find(".upload-preview-img");
+        $.upload_file({
+            url: _upload_url + "&group_id=" + group_id,
+            accept: group.attr("accept") || "image/*",
+            start: function () {
+                // btn.btnLoading(btn.text());
+            },
+            success: function (res) {
+                btn.btnReset();
+                if (res.code === 1) {
+                    $.alert({
+                        content: res.msg,
+                    });
+                    return;
+                }
+                getGroupFile();
+            },
+        });
+    });
+    String.prototype._trim = function (char, type) {
+        if (char) {
+            if (type == "left") {
+                return this.replace(new RegExp("^\\" + char + "+", "g"), "");
+            } else if (type == "right") {
+                return this.replace(new RegExp("\\" + char + "+$", "g"), "");
+            }
+            return this.replace(
+                new RegExp("^\\" + char + "+|\\" + char + "+$", "g"),
+                ""
+            );
+        }
+        return this.replace(/^\s+|\s+$/g, "");
+    };
+
+    var pick_link_modal;
+    $(document).ready(function () {
+        var pick_link_btn;
+
+        pick_link_modal = new Vue({
+            el: "#pick_link_modal",
+            data: {
+                in_array: function (val, arr) {
+                    return $.inArray(val, arr);
+                },
+                open_type: [],
+                selected_link: null,
+                link_list: null,
+                is_required: false,
+            },
+        });
+
+        $(document).on("change", ".link-list-select", function () {
+            var i = $(this).val();
+            var arr = pick_link_modal.link_list[i].params;
+            if (arr.length) {
+                if (arr[0].required == "required") {
+                    pick_link_modal.is_required = true;
+                } else {
+                    pick_link_modal.is_required = false;
+                }
+            }
+
+            if (i == "") {
+                pick_link_modal.selected_link = null;
+                return;
+            }
+            pick_link_modal.selected_link = pick_link_modal.link_list[i];
+        });
+
+        $(document).on("click", ".pick-link-btn", function () {
+            pick_link_btn = $(this);
+            var open_type = $(this).attr("open-type");
+            if (open_type && open_type != "") {
+                open_type = open_type.split(",");
+            } else {
+                open_type = ["navigate", "switchTab", "wxapp"];
+            }
+            pick_link_modal.open_type = open_type;
+            $.ajax({
+                url: show_pages,
+                method: "get",
+                dataType: "json",
+                success: function (res) {
+                    pick_link_modal.link_list = res;
+                    $(".pick-link-modal").modal("show");
+                },
+            });
+        });
+
+        $(document).on("click", ".pick-link-confirm", function () {
+            if ($(".paramVal").val() == "" && pick_link_modal.is_required) {
+                console.log($(".paramVal").val());
+                return;
+            }
+
+            var selected_link = pick_link_modal.selected_link;
+            if (!selected_link) {
+                $(".pick-link-modal").modal("hide");
+                return;
+            }
+            var link_input = pick_link_btn
+                .parents(".page-link-input")
+                .find(".link-input");
+            var open_type_input = pick_link_btn
+                .parents(".page-link-input")
+                .find(".link-open-type");
+            var params = "";
+            if (selected_link.params && selected_link.params.length > 0) {
+                for (var i in selected_link.params) {
+                    params +=
+                        selected_link.params[i].key +
+                        "=" +
+                        encodeURIComponent(selected_link.params[i].value) +
+                        "&";
+                }
+            }
+            var link = selected_link.Link;
+            link += "?" + params;
+            link = link._trim("&");
+            link = link._trim("?");
+            link_input.val(link).change();
+            open_type_input.val(selected_link.open_type).change();
+            $(".pick-link-modal").modal("hide");
+        });
+    });
+</script>
+<link rel="stylesheet" href="./Modify.css" />
+
+<div
+        class="upload_picture"
+        id="file_select_modal"
+        data-backdrop="static"
+        style="z-index: 99999999;"
+>
+    <div class="upload_flex" role="document">
+        <div class="upload_auto">
+            <div class="upload_title">
+                选择文件
+                <img src="./cha.png" class="cancel-group-list upload_cha" />
+            </div>
+            <div id="file" class="upload_content">
+                <div class="upload_view">
+                    <div class="upload_l">
+                        <div class="add-group upload_add">
+                            <img src="./tj.png" /> 添加分组
+                        </div>
+                    </div>
+                    <div class="upload_r file-list">
+                        <div class="upload_r_title">
+                            <div class="upload-group upload_group">
+                                <label class="checkbox-label"
+                                ><input type="checkbox" name="checkbox" value="1" />
+                                    <span class="label-icon"></span>
+                                    <span class="label-text">全选</span></label
+                                >
+                            </div>
+                            <div class="upload_dell">
+                                <a
+                                        href="javascript:"
+                                        class="btn-danger delete-file-group reset"
+                                ><img src="./shc.png" class="ul_img1" />
+                                    <img src="./sha_h.png" class="ul_img2" /> 删除</a
+                                >
+                            </div>
+                            <div class="dropdown upload_dropdown">
+                                <button
+                                        type="button"
+                                        id="dropdownMenuButton"
+                                        data-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        class="reset"
+                                >
+                                    移动
+                                </button>
+                                <div class="upload_dropdown_l">
+                                    <img src="./zf_h.png" class="ul_img1" />
+                                    <img src="./yd.png" class="ul_img2" />
+                                </div>
+                                <div class="upload_dropdown_r">
+                                    <img src="./jtx.png" class="ul_img1" />
+                                    <img src="./jiant.png" class="ul_img2" />
+                                </div>
+                                <div
+                                        aria-labelledby="dropdownMenuButton"
+                                        class="dropdown-menu upload_menu"
+                                ></div>
+                            </div>
+                            <div class="upload-group upload_images">
+                                <a href="javascript:" class="btn-primary upload-file-group"
+                                ><img src="./shangc.png" class="ul_img3" />
+                                    <img src="./shangc_h.png" class="ul_img4" /> 上传图片</a
+                                >
+                            </div>
+                        </div>
+                        <div class="upload_h"></div>
+                        <div class="file-loading text-center upload_loading">
+                            <img
+                                    src="./loading-2.svg"
+                                    style="height: 1.14286rem; width: 1.14286rem;"
+                            />
+                        </div>
+                        <div class="text-center upload_text">
+                            <a href="javascript:" class="file-more" style="display: none;"
+                            >加载更多</a
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="upload_footer">
+                    <div class="cancel-group-list ta_btn4">取消</div>
+                    <div class="save-group-list ta_btn3 buttom_hover">确定</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="pick_link_modal">
+    <div data-backdrop="static" class="modal fade pick-link-modal">
+        <div role="document" class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">选择链接</h5>
+                    <button
+                            type="button"
+                            data-dismiss="modal"
+                            aria-label="Close"
+                            class="close"
+                    >
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-addon">可选链接</span>
+                        <select class="form-control link-list-select"
+                        ><option value="">点击选择链接</option>
+                        </select>
+                    </div>
+                    <div class="text-center text-muted">请选择链接</div>
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:" class="btn btn-primary pick-link-confirm"
+                    >确定</a
+                    >
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="district_pick_modal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="panel">
+            <div class="panel-header">
+                <span>选择地区</span>
+                <a href="javascript:" data-dismiss="modal" class="panel-close">×</a>
+            </div>
+            <div class="panel-body">
+                <table class="w-100">
+                    <colgroup>
+                        <col style="width: 33.3333%;" />
+                        <col style="width: 33.3333%;" />
+                        <col style="width: 33.3333%;" />
+                    </colgroup>
+                    <tbody>
+                    <tr>
+                        <td>省</td>
+                        <td>市</td>
+                        <td>县/区</td>
+                    </tr>
+                    <tr>
+                        <td><select class="form-control"></select></td>
+                        <td><select class="form-control"></select></td>
+                        <td><select class="form-control"></select></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="panel-footer">
+                <a href="javascript:" class="btn btn-primary district-confirm-btn"
+                >确定</a
+                >
+            </div>
+        </div>
+    </div>
+</div>
+<nav class="nav-title">
+    <span>商品管理</span>
+    <span onclick="javascript :history.back(-1);"
+    ><span class="arrows">&gt;</span>商品列表</span
+    >
+    <span><span class="arrows">&gt;</span>编辑</span>
+</nav>
+<div id="page" class="iframe-content form-scroll" style="">
+    <form
+            name="form1"
+            id="form1"
+            method="post"
+            enctype="multipart/form-data"
+            style=""
+    >
+        <input type="hidden" name="id" id="id" value="808" />
+        <input type="hidden" name="mch_id" value="80" class="mch_id" />
+        <input
+                type="hidden"
+                name="status"
+                id="status"
+                value="2"
+                class="status"
+        />
+        <div class="formDivSD">
+
+            <div class="formContentSD">
+                <div class="formListSD">
+                    <div class="formTextBigSD">
+                        <span class="must">*</span><span>商品展示图：</span>
+                    </div>
+                    <div class="formInputSD upload-group multiple">
+                        <div id="sortList" class="upload-preview-list uppre_auto">
+                            <div class="upload-preview form_new_img">
+                                <img
+                                        src="./sha.png"
+                                        class="form_new_sha file-item-delete"
+                                />
+                                <img src="./1604036181803.png" class="upload-preview-img" />
+                                <div
+                                        onclick="set_center(this)"
+                                        class="form_new_words set_center"
+                                >
+                                    主图
+                                </div>
+                                <input
+                                        type="hidden"
+                                        name="imgurls[]"
+                                        value="https://laikeds.oss-cn-shenzhen.aliyuncs.com/1/1/1604036181803.png"
+                                        class="file-item-input"
+                                />
+                            </div>
+                        </div>
+                        <div data-max="5" class="select-file form_new_file from_i">
+                            <div>
+                                <img
+                                        data-max="5"
+                                        src="./sahc.png"
+                                        data-toggle="tooltip"
+                                        data-placement="bottom"
+                                        title=""
+                                        class="btn-secondary select-file"
+                                        data-original-title=""
+                                />
+                                <span class="form_new_span">上传图片</span>
+                            </div>
+                        </div>
+                        <span class="addText" style="max-width: 350px;"
+                        >（展示图最多上传五张，建议上传500px*500px的图片，主图未设置则默认第一张）</span
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="formSpaceSD"></div>
+        </div>
+
+        <div class="page_h10 page_bort">
+            <input
+                    type="button"
+                    name="Submit"
+                    value="保存得到的"
+                    onclick="check()"
+                    class="fo_btn2 btn-right"
+                    style="margin-right: 60px !important;"
+            />
+            <input
+                    type="button"
+                    name="reset"
+                    value="取消"
+                    onclick="javascript :history.back(-1);"
+                    class="fo_btn1 btn-left"
+            />
+        </div>
+        <input
+                name="_csrf"
+                value="laiketui"
+                type="text"
+                style="display: none;"
+        />
+    </form>
+
+
+</div>
+

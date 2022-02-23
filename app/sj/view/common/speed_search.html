@@ -1,0 +1,35 @@
+<div class="demoTable layui-form">
+    <table class="layui-table" lay-skin="line">
+        <colgroup>
+            <col width="190">
+            <col width="250">
+            <col width="250">
+            <col width="250">
+            <col width="250">
+        </colgroup>
+        <tbody>
+        <tr>
+            <td>服务器ip:</td>
+            <td>
+                <select name="ip" lay-filter="ip" id="ip"  >
+                    <option value="{$ip}">{$ip}</option>
+                </select>
+            </td>
+            <td>网卡:</td>
+            <td>
+                <div class="layui-input-inline">
+                    <select name="card" lay-filter="card" id="card"  >
+                        {foreach name="card" id="vo"}
+                        <option value="{$vo}">{$vo}</option>
+                        {/foreach}
+                    </select>
+                </div>
+            </td>
+            <td>
+                <button class="layui-btn layuiadmin-btn-list" lay-submit lay-filter="search" id="search">搜索</button>
+            </td>
+
+        </tr>
+        </tbody>
+    </table>
+</div>
